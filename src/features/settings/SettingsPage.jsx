@@ -14,7 +14,6 @@ export default function SettingsPage() {
   const [newPassword, setNewPassword] = useState('')
   const [loading, setLoading] = useState(false)
   
-  // ទាញយក Settings ពី Store
   const { monthlyBudget, setBudget, accentColor, setAccentColor } = useSettingsStore()
   const [budgetInput, setBudgetInput] = useState(monthlyBudget)
 
@@ -43,7 +42,6 @@ export default function SettingsPage() {
     toast.success('បានកំណត់ថវិកាប្រចាំខែដោយជោគជ័យ!')
   }
 
-  // ពណ៌ដែលអាចជ្រើសរើសបាន
   const colors = [
     { id: 'indigo', name: 'ស្វាយ', bg: 'bg-[#6366F1]' },
     { id: 'emerald', name: 'បៃតង', bg: 'bg-[#10B981]' },

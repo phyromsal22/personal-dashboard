@@ -1,7 +1,9 @@
-import { NavLink } from 'react-router-dom'
-import { Home, CheckSquare, Wallet, Smile, Settings, ChevronLeft } from 'lucide-react'
+import { NavLink, useNavigate } from 'react-router-dom'
+import { Home, CheckSquare, Wallet, Smile, Settings, ChevronLeft, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
+import { supabase } from '@/lib/supabase'
+import { toast } from 'sonner'
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: Home, end: true },
@@ -13,6 +15,14 @@ const navItems = [
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
+  const navigate = useNavigate()
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    toast.success('បានចាកចេញពីគណនី')
+    navigate('/login')
+  }
+
   return (
     <aside className={cn('hidden md:flex flex-col h-screen sticky top-0 bg-surface border-r border-border transition-all duration-300', collapsed ? 'w-20' : 'w-64')}>
       <div className="flex items-center h-16 px-4 border-b border-border">
@@ -27,9 +37,17 @@ export function Sidebar() {
           </NavLink>
         ))}
       </nav>
-      <button onClick={() => setCollapsed(!collapsed)} className="flex items-center justify-center h-12 border-t border-border text-text-muted hover:text-text hover:bg-surface-hover transition">
-        <ChevronLeft className={cn('h-4 w-4 transition-transform', collapsed && 'rotate-180')} />
-      </button>
+      
+      {/* ប៊ូតុង Logout និង Collapse */}
+      <div className="border-t border-border flex flex-col">
+        <button onClick={handleLogout} className="flex items-center gap-3 h-12 px-4 text-danger hover:bg-danger/10 transition-colors">
+          <LogOut className="h-5 w-5 shrink-0" />
+          {!collapsed && <span className="text-sm font-medium">ចាកចេញ</span>}
+        </button>
+        <button onClick={() => setCollapsed(!collapsed)} className="flex items-center justify-center h-12 border-t border-border text-text-muted hover:text-text hover:bg-surface-hover transition">
+          <ChevronLeft className={cn('h-4 w-4 transition-transform', collapsed && 'rotate-180')} />
+        </button>
+      </div>
     </aside>
   )
 }

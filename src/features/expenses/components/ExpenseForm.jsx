@@ -5,12 +5,12 @@ import { useExpensesStore } from '@/store/expensesStore'
 import { EXPENSE_CATEGORIES } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
-import { Camera, Loader2, ClipboardPaste } from 'lucide-react'
+import { Camera, Loader2, ClipboardPaste, Image as ImageIcon } from 'lucide-react'
 
 export function ExpenseForm({ onClose, initialData }) {
   const [amount, setAmount] = useState('')
   const [category, setCategory] = useState('food')
-  const [currency, setCurrency] = useState('USD') // បន្ថែម State សម្រាប់រូបិយប័ណ្ណ
+  const [currency, setCurrency] = useState('USD')
   const [note, setNote] = useState('')
   const [loadingScan, setLoadingScan] = useState(false)
   
@@ -26,7 +26,6 @@ export function ExpenseForm({ onClose, initialData }) {
     }
   }, [initialData])
 
-  // មុខងារកណ្តាលសម្រាប់យករូបភាពទៅឱ្យ AI អាន
   const processImage = async (file) => {
     if (!file || !file.type.startsWith('image/')) {
       return toast.error('សូមជ្រើសរើស ឬ Paste តែរូបភាពប៉ុណ្ណោះ')
@@ -59,9 +58,7 @@ export function ExpenseForm({ onClose, initialData }) {
                   },
                   { 
                     type: 'image_url', 
-                    image_url: { 
-                      url: `data:${mimeType};base64,${base64Image}` 
-                    } 
+                    image_url: { url: `data:${mimeType};base64,${base64Image}` } 
                   }
                 ]
               }
@@ -92,14 +89,37 @@ export function ExpenseForm({ onClose, initialData }) {
     }
   }
 
-  // មុខងារសម្រាប់ការជ្រើសរើសរូបភាពពី File
   const handleFileChange = (e) => {
     const file = e.target.files[0]
     if (file) processImage(file)
   }
 
-  // មុខងារសម្រាប់ការ Paste រូបភាព (Ctrl+V) នៅលើកុំព្យូទ័រ
-  const handlePaste = (e) => {
+  // មុខងារសម្រាប់ការ Paste តាមរយៈប៊ូតុង (ដំណើរការលើទូរស័ព្ទខ្លះ និងកុំព្យូទ័រ)
+  const handlePasteButtonClick = async () => {
+    try {
+      if (!navigator.clipboard || !navigator.clipboard.read) {
+        return toast.error('ទូរស័ព្ទរបស់អ្នកមិនគាំទ្រការ Paste រូបភាពទេ។ សូមចុច "ជ្រើសរើសរូបភាព" ជំនួសវិញ។')
+      }
+      
+      const items = await navigator.clipboard.read()
+      for (const item of items) {
+        const imageType = item.types.find(type => type.startsWith('image/'))
+        if (imageType) {
+          const blob = await item.getType(imageType)
+          const file = new File([blob], "pasted-image.png", { type: imageType })
+          processImage(file)
+          return
+        }
+      }
+      toast.error('រកមិនឃើញរូបភាពនៅក្នុង Clipboard ទេ។ សូម Copy រូបភាពជាមុនសិន។')
+    } catch (error) {
+      console.error('Paste error:', error)
+      toast.error('សូមអនុញ្ញាតឱ្យចូលប្រើ Clipboard ឬជ្រើសរើសរូបភាពពី Gallery។')
+    }
+  }
+
+  // មុខងារសម្រាប់ការ Paste ដោយប្រើ Keyboard (Ctrl+V) លើកុំព្យូទ័រ
+  const handleKeyboardPaste = (e) => {
     const items = e.clipboardData?.items
     if (!items) return
     for (let i = 0; i < items.length; i++) {
@@ -111,17 +131,14 @@ export function ExpenseForm({ onClose, initialData }) {
     }
   }
 
-  // ភ្ជាប់ Event Listener សម្រាប់ការ Paste ពេល Form បើក
   useEffect(() => {
-    document.addEventListener('paste', handlePaste)
-    return () => document.removeEventListener('paste', handlePaste)
+    document.addEventListener('paste', handleKeyboardPaste)
+    return () => document.removeEventListener('paste', handleKeyboardPaste)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!amount || isNaN(amount)) return
-    
-    // បញ្ជូន currency ទៅជាមួយ
     const data = { amount: parseFloat(amount), category, currency, note }
 
     if (initialData) {
@@ -138,29 +155,35 @@ export function ExpenseForm({ onClose, initialData }) {
     <form onSubmit={handleSubmit} className="card mb-6 animate-fade-up border-primary/30">
       <h3 className="font-semibold mb-4">{initialData ? 'កែប្រែការចំណាយ' : 'បន្ថែមចំណាយថ្មី'}</h3>
       
-      {/* ប្រអប់ស្កេនវិក័យប័ត្រ (គាំទ្រទាំងការចុចលើទូរស័ព្ទ និង Paste លើកុំព្យូទ័រ) */}
       {!initialData && (
-        <div className="mb-4">
-          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-surface-hover transition-colors">
-            <div className="flex flex-col items-center text-center p-4">
-              {loadingScan ? (
-                <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
-              ) : (
-                <div className="flex gap-2 mb-2 text-text-muted">
-                  <Camera className="h-8 w-8" />
-                  <span className="text-2xl font-light">/</span>
-                  <ClipboardPaste className="h-8 w-8" />
-                </div>
-              )}
-              <span className="text-sm font-medium text-text">
-                {loadingScan ? 'AI កំពុងអានរូបភាព...' : 'ចុចទីនេះដើម្បីស្កេនវិក័យប័ត្រ'}
-              </span>
-              <span className="text-xs text-text-muted mt-1">
-                (លើកុំព្យូទ័រ អ្នកអាច Copy រួចចុច Ctrl+V បាន)
-              </span>
+        <div className="mb-6">
+          {loadingScan ? (
+             <div className="flex flex-col items-center justify-center w-full h-32 border-2 border-primary/50 bg-primary/5 rounded-lg">
+               <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+               <span className="text-sm font-medium text-primary">AI កំពុងអានរូបភាព...</span>
+             </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {/* ប៊ូតុងទី១៖ បើក Camera ឬ Gallery */}
+              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-surface-hover transition-colors">
+                <ImageIcon className="h-8 w-8 text-text-muted mb-2" />
+                <span className="text-sm font-medium text-text text-center px-2">ជ្រើសរើសរូបភាព</span>
+                <span className="text-xs text-text-muted mt-1">(Gallery/Camera)</span>
+                <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+              </label>
+
+              {/* ប៊ូតុងទី២៖ Paste ពី Clipboard */}
+              <button 
+                type="button"
+                onClick={handlePasteButtonClick}
+                className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg hover:bg-surface-hover transition-colors"
+              >
+                <ClipboardPaste className="h-8 w-8 text-text-muted mb-2" />
+                <span className="text-sm font-medium text-text text-center px-2">Paste រូបភាព</span>
+                <span className="text-xs text-text-muted mt-1">(ពី Clipboard)</span>
+              </button>
             </div>
-            <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} disabled={loadingScan} />
-          </label>
+          )}
         </div>
       )}
 
@@ -178,7 +201,6 @@ export function ExpenseForm({ onClose, initialData }) {
               disabled={loadingScan}
               className="flex-1"
             />
-            {/* ជម្រើសរូបិយប័ណ្ណ */}
             <div className="flex bg-surface border border-border rounded-lg overflow-hidden">
               <button
                 type="button"

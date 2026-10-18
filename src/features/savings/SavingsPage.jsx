@@ -25,7 +25,10 @@ export default function SavingsPage() {
   useEffect(() => {
     const joinId = searchParams.get('join')
     
-    if (joinId) {
+    // បើគ្មាន joinId ទេ ឱ្យវាឈប់ធ្វើការភ្លាម (ការពារ Infinite Loop)
+    if (!joinId) return;
+
+    const processJoin = async () => {
       // ពិនិត្យមើលថាតើ ID នេះមានលក្ខណៈធម្មតាឬអត់ (ការពារកុំឱ្យគាំងពេល Scan ខុស)
       if (joinId.length > 50 || joinId.includes('@') || joinId.includes(' ')) {
         toast.error('Link អញ្ជើញនេះមិនត្រឹមត្រូវទេ!')
@@ -33,15 +36,17 @@ export default function SavingsPage() {
         return
       }
 
-      joinGoal(joinId).then(success => {
-        if (success) {
-          toast.success('អ្នកបានចូលរួមក្នុងគោលដៅសន្សំនេះហើយ!')
-        } else {
-          toast.error('អ្នកប្រហែលជាចូលរួមរួចហើយ ឬ Link មិនត្រឹមត្រូវ។')
-        }
-        setSearchParams({})
-      })
+      const success = await joinGoal(joinId)
+      if (success) {
+        toast.success('អ្នកបានចូលរួមក្នុងគោលដៅសន្សំនេះហើយ!')
+      } else {
+        toast.error('អ្នកប្រហែលជាចូលរួមរួចហើយ ឬ Link មិនត្រឹមត្រូវ។')
+      }
+      // លុប ?join ចេញពី URL ដើម្បីបញ្ចប់ដំណើរការ
+      setSearchParams({})
     }
+
+    processJoin()
   }, [searchParams, joinGoal, setSearchParams])
 
   useEffect(() => { fetchGoals() }, [fetchGoals])
@@ -121,7 +126,7 @@ export default function SavingsPage() {
     }
   }
 
-  // មុខងារ Paste ពី Clipboard (ដំណើរការលើទូរស័ព្ទ និងកុំព្យូទ័រ)
+  // មុខងារ Paste ពី Clipboard
   const handlePasteButtonClick = async () => {
     try {
       if (!navigator.clipboard || !navigator.clipboard.read) {
@@ -221,7 +226,6 @@ export default function SavingsPage() {
                 <label className="flex flex-col items-center justify-center h-24 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-surface-hover">
                   {loadingScan ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : <Camera className="h-6 w-6 text-text-muted mb-1" />}
                   <span className="text-xs text-text text-center px-2">{loadingScan ? 'AI កំពុងអាន...' : 'ថតរូបវិក័យប័ត្រ'}</span>
-                  {/* បន្ថែម capture="environment" ដើម្បីបើកកាមេរ៉ាផ្ទាល់ */}
                   <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => processImage(e.target.files[0])} />
                 </label>
                 <button type="button" onClick={handlePasteButtonClick} className="flex flex-col items-center justify-center h-24 border-2 border-dashed border-border rounded-lg hover:bg-surface-hover">

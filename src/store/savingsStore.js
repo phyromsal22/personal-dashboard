@@ -10,14 +10,12 @@ export const useSavingsStore = create((set, get) => ({
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return set({ loading: false })
 
-    // ទាញយកតែគោលដៅសន្សំសិន (មិនទាញ contributions ភ្ជាប់មកជាមួយទេ)
     const { data: goalsData, error } = await supabase
       .from('savings_goals')
       .select('*')
       .order('created_at', { ascending: false })
 
     if (!error) {
-      // ទាញយកការចូលរួមដាក់លុយដាច់ដោយឡែក
       const { data: contributions } = await supabase.from('savings_contributions').select('goal_id, amount')
       
       const formattedGoals = goalsData.map(goal => {
@@ -29,7 +27,6 @@ export const useSavingsStore = create((set, get) => ({
       
       set({ goals: formattedGoals, loading: false })
     } else {
-      console.error("Fetch Goals Error:", error)
       set({ loading: false })
     }
   },
@@ -39,6 +36,31 @@ export const useSavingsStore = create((set, get) => ({
     if (!user) return
     const { data, error } = await supabase.from('savings_goals').insert([{ ...goal, user_id: user.id }]).select()
     if (!error) set((state) => ({ goals: [{ ...data[0], current_amount: 0 }, ...state.goals] }))
+  },
+
+  joinGoal: async (goalId) => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return false
+
+    // ពិនិត្យមើលថាតើគាត់ជាម្ចាស់គោលដៅនេះឬអត់ (បើជាម្ចាស់ មិនចាំបាច់ចូលរួមទេ)
+    const { data: goal } = await supabase.from('savings_goals').select('user_id').eq('id', goalId).single()
+    if (goal?.user_id === user.id) return true
+
+    // ពិនិត្យមើលថាតើគាត់ចូលរួមរួចហើយឬអត់
+    const { data: existing } = await supabase.from('goal_collaborators').select('*').eq('goal_id', goalId).eq('user_id', user.id).single()
+    if (existing) return true
+
+    // បើមិនទាន់ ទើបឱ្យចូលរួម
+    const { error } = await supabase.from('goal_collaborators').insert([{
+      goal_id: goalId,
+      user_id: user.id
+    }])
+
+    if (!error) {
+      get().fetchGoals()
+      return true
+    }
+    return false
   },
 
   contributeToGoal: async (goalId, amount, note, receiptFile) => {

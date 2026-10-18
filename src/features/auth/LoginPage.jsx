@@ -23,8 +23,11 @@ export default function LoginPage() {
           password: password.trim() 
         })
         if (error) throw error
+        
         toast.success('ចូលប្រើប្រាស់ជោគជ័យ!')
-        window.location.href = '/dashboard' 
+        // ប្រើ navigate ជំនួស window.location.href ដើម្បីកុំឱ្យ iPhone Refresh ទំព័រខុស
+        navigate('/dashboard')
+        
       } else {
         const { error } = await supabase.auth.signUp({ 
           email: email.trim(), 

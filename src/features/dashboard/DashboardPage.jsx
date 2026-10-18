@@ -18,7 +18,10 @@ export default function DashboardPage() {
   
   // គណនាទិន្នន័យសម្រាប់បង្ហាញ
   const todayExpenses = expenses.filter(e => e.date.startsWith(today)).reduce((s, e) => s + e.amount, 0)
-  const habitsDoneToday = habits.filter(h => h.completedDates.includes(today)).length
+  
+  // កែត្រង់នេះ៖ ប្តូរពី completedDates ទៅជា completed_dates វិញ
+  const habitsDoneToday = habits.filter(h => h.completed_dates?.includes(today)).length
+  
   const currentMood = moods[today] ? ['😢', '😟', '😐', '🙂', '😄'][moods[today] - 1] : '➖'
   
   const chartData = getExpensesForLast7Days(expenses)

@@ -1,16 +1,45 @@
-# React + Vite
+# 📊 Personal Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A full-stack web application to track daily habits, manage expenses, and monitor mood. Built with modern web technologies and real-time cloud database.
 
-Currently, two official plugins are available:
+## ✨ Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Authentication:** Secure Login & Register using Supabase Auth.
+- **Habits Tracker:** Track daily habits, visualize streaks, and view a GitHub-style heatmap.
+- **Expense Manager:** Log daily expenses, view category charts (Pie & Bar), and filter by month/category.
+- **CSV Export:** Download expense data for external reporting.
+- **Mood Tracker:** Log daily mood and view the past 7 days' history.
+- **Dark/Light Mode:** Fully responsive UI with a premium dark mode.
+- **PWA Ready:** Can be installed as a standalone app on mobile devices.
 
-## React Compiler
+## 🚀 Live Demo
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+👉 **[View Live App Here](https://personal-dashboard-sigma-lake.vercel.app)** *(ដាក់ Link Vercel របស់អ្នកនៅទីនេះ)*
 
-## Expanding the Oxlint configuration
+## 🛠️ Tech Stack
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+- **Frontend:** React, Vite, React Router
+- **Styling:** Tailwind CSS, Lucide Icons, Framer Motion
+- **State Management:** Zustand
+- **Charts:** Recharts
+- **Backend/Database:** Supabase (PostgreSQL, Authentication, Row Level Security)
+- **Deployment:** Vercel
+
+## 📸 Screenshots
+
+*(អ្នកត្រូវថតរូបភាព App របស់អ្នក រួចអូសទម្លាក់ (Drag & Drop) វាចូលក្នុងប្រអប់នេះនៅលើ GitHub)*
+
+### Dashboard View
+<!-- ដាក់រូបភាព Dashboard នៅទីនេះ -->
+
+### Habits & Heatmap
+<!-- ដាក់រូបភាព Habits នៅទីនេះ -->
+
+### Expenses & Charts
+<!-- ដាក់រូបភាព Expenses នៅទីនេះ -->
+
+## ⚙️ How to Run Locally
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/phyromsal22/personal-dashboard.git

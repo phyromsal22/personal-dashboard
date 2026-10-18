@@ -1,45 +1,31 @@
-# 📊 Personal Dashboard
+# 📊 Personal Dashboard (Full-Stack & AI Powered)
 
-A full-stack web application to track daily habits, manage expenses, and monitor mood. Built with modern web technologies and real-time cloud database.
+A comprehensive web application to track daily habits, manage expenses, monitor mood, and get AI-powered financial advice. Built with modern web technologies.
 
-## ✨ Features
+## 🔗 Live Demo
+👉 **[View Live App](https://personal-dashboard-sigma-lake.vercel.app)** *(ដាក់ Link Vercel របស់អ្នក)*
 
-- **Authentication:** Secure Login & Register using Supabase Auth.
-- **Habits Tracker:** Track daily habits, visualize streaks, and view a GitHub-style heatmap.
-- **Expense Manager:** Log daily expenses, view category charts (Pie & Bar), and filter by month/category.
-- **CSV Export:** Download expense data for external reporting.
-- **Mood Tracker:** Log daily mood and view the past 7 days' history.
-- **Dark/Light Mode:** Fully responsive UI with a premium dark mode.
-- **PWA Ready:** Can be installed as a standalone app on mobile devices.
-
-## 🚀 Live Demo
-
-👉 **[View Live App Here](https://personal-dashboard-sigma-lake.vercel.app)** *(ដាក់ Link Vercel របស់អ្នកនៅទីនេះ)*
+## ✨ Key Features
+- **Authentication:** Secure Login, Register, and Password Reset (Supabase Auth).
+- **Habits Tracker:** Track daily habits with streaks and GitHub-style heatmaps.
+- **Expense Manager:** Log expenses, view category charts, export to CSV, and search/sort.
+- **Budget & Alerts:** Set a monthly budget and get color-coded warnings (Green/Amber/Red) when nearing the limit.
+- **AI Financial Advisor:** Integrated with DeepSeek AI to analyze spending and provide personalized advice in Khmer.
+- **Mood Tracker:** Log daily mood and view a 7-day history.
+- **Custom Themes:** Change the app's primary accent color (Indigo, Emerald, Rose, Amber).
+- **PWA Ready:** Installable on mobile devices for a native app experience.
 
 ## 🛠️ Tech Stack
-
-- **Frontend:** React, Vite, React Router
-- **Styling:** Tailwind CSS, Lucide Icons, Framer Motion
-- **State Management:** Zustand
-- **Charts:** Recharts
-- **Backend/Database:** Supabase (PostgreSQL, Authentication, Row Level Security)
+- **Frontend:** React, Vite, Tailwind CSS, Framer Motion, Zustand, Recharts
+- **Backend/BaaS:** Supabase (PostgreSQL, Row Level Security, Auth)
+- **AI Integration:** DeepSeek API
 - **Deployment:** Vercel
 
 ## 📸 Screenshots
+*(ថតរូបភាព App របស់អ្នក រួចអូសទម្លាក់ (Drag & Drop) ចូលទីនេះ)*
 
-*(អ្នកត្រូវថតរូបភាព App របស់អ្នក រួចអូសទម្លាក់ (Drag & Drop) វាចូលក្នុងប្រអប់នេះនៅលើ GitHub)*
-
-### Dashboard View
-<!-- ដាក់រូបភាព Dashboard នៅទីនេះ -->
-
-### Habits & Heatmap
-<!-- ដាក់រូបភាព Habits នៅទីនេះ -->
-
-### Expenses & Charts
-<!-- ដាក់រូបភាព Expenses នៅទីនេះ -->
-
-## ⚙️ How to Run Locally
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/phyromsal22/personal-dashboard.git
+## 🚀 Run Locally
+1. `git clone https://github.com/phyromsal22/personal-dashboard.git`
+2. `npm install`
+3. Add `.env` file with `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, and `VITE_DEEPSEEK_API_KEY`
+4. `npm run dev`

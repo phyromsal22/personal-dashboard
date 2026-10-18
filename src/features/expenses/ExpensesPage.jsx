@@ -1,15 +1,16 @@
 import { useState } from 'react'
-import { Plus, Wallet, Filter, Download } from 'lucide-react' // បន្ថែម Download
+import { Plus, Wallet, Filter, Download, Search } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useExpensesStore } from '@/store/expensesStore'
 import { ExpenseForm } from './components/ExpenseForm'
 import { ExpenseItem } from './components/ExpenseItem'
 import { formatCurrency } from '@/lib/formatters'
 import { EXPENSE_CATEGORIES } from '@/lib/constants'
-import { exportToCSV } from './utils' // បន្ថែម Import នេះ
+import { exportToCSV } from './utils'
 
 export default function ExpensesPage() {
   const expenses = useExpensesStore((state) => state.expenses)
@@ -18,14 +19,27 @@ export default function ExpensesPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingExpense, setEditingExpense] = useState(null)
   
+  // បន្ថែម State សម្រាប់ Filter និង Sort
   const [filterMonth, setFilterMonth] = useState(new Date().toISOString().slice(0, 7))
   const [filterCategory, setFilterCategory] = useState('all')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [sortBy, setSortBy] = useState('date_desc')
 
-  const filteredExpenses = expenses.filter((expense) => {
-    const matchMonth = expense.date.startsWith(filterMonth)
-    const matchCategory = filterCategory === 'all' || expense.category === filterCategory
-    return matchMonth && matchCategory
-  })
+  // គណនាទិន្នន័យ (Filter + Search + Sort)
+  const filteredExpenses = expenses
+    .filter((expense) => {
+      const matchMonth = expense.date.startsWith(filterMonth)
+      const matchCategory = filterCategory === 'all' || expense.category === filterCategory
+      const matchSearch = (expense.note || '').toLowerCase().includes(searchTerm.toLowerCase())
+      return matchMonth && matchCategory && matchSearch
+    })
+    .sort((a, b) => {
+      if (sortBy === 'date_desc') return new Date(b.date) - new Date(a.date)
+      if (sortBy === 'date_asc') return new Date(a.date) - new Date(b.date)
+      if (sortBy === 'amount_desc') return b.amount - a.amount
+      if (sortBy === 'amount_asc') return a.amount - b.amount
+      return 0
+    })
 
   const total = filteredExpenses.reduce((sum, item) => sum + item.amount, 0)
 
@@ -46,7 +60,6 @@ export default function ExpensesPage() {
         subtitle="តាមដានការចំណាយរបស់អ្នក" 
         action={
           <div className="flex gap-2">
-            {/* បន្ថែមប៊ូតុង Export */}
             <Button variant="secondary" onClick={() => exportToCSV(filteredExpenses)}>
               <Download className="h-4 w-4" /> <span className="hidden sm:inline">ទាញយក</span>
             </Button>
@@ -65,35 +78,62 @@ export default function ExpensesPage() {
         <Wallet className="h-10 w-10 text-primary/50" />
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="flex-1 flex items-center gap-2 bg-surface border border-border rounded-lg px-3 py-2">
-          <Filter className="h-4 w-4 text-text-muted" />
+      {/* ប្រអប់ Search និង Filter */}
+      <div className="space-y-3 mb-6">
+        {/* ជួរទី ១៖ Search និង Sort */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
+            <Input 
+              placeholder="ស្វែងរកតាមចំណាំ..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9"
+            />
+          </div>
           <select 
-            value={filterMonth} 
-            onChange={(e) => setFilterMonth(e.target.value)}
-            className="bg-transparent text-text text-sm focus:outline-none w-full"
+            value={sortBy} 
+            onChange={(e) => setSortBy(e.target.value)}
+            className="h-10 px-3 rounded-lg bg-surface border border-border text-text text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
           >
-            <option value={new Date().toISOString().slice(0, 7)}>ខែនេះ</option>
-            {[...Array(6)].map((_, i) => {
-              const d = new Date()
-              d.setMonth(d.getMonth() - (i + 1))
-              const val = d.toISOString().slice(0, 7)
-              return <option key={val} value={val}>{val}</option>
-            })}
+            <option value="date_desc">ថ្មីបំផុតមុន</option>
+            <option value="date_asc">ចាស់បំផុតមុន</option>
+            <option value="amount_desc">តម្លៃច្រើនមុន</option>
+            <option value="amount_asc">តម្លៃតិចមុន</option>
           </select>
         </div>
 
-        <div className="flex-1 flex items-center gap-2 bg-surface border border-border rounded-lg px-3 py-2">
-          <select 
-            value={filterCategory} 
-            onChange={(e) => setFilterCategory(e.target.value)}
-            className="bg-transparent text-text text-sm focus:outline-none w-full"
-          >
-            <option value="all">គ្រប់ប្រភេទ</option>
-            {EXPENSE_CATEGORIES.map(cat => (
-              <option key={cat.id} value={cat.id}>{cat.icon} {cat.label}</option>
-            ))}
-          </select>
+        {/* ជួរទី ២៖ Filter ខែ និងប្រភេទ */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex-1 flex items-center gap-2 bg-surface border border-border rounded-lg px-3 py-2">
+            <Filter className="h-4 w-4 text-text-muted" />
+            <select 
+              value={filterMonth} 
+              onChange={(e) => setFilterMonth(e.target.value)}
+              className="bg-transparent text-text text-sm focus:outline-none w-full"
+            >
+              <option value={new Date().toISOString().slice(0, 7)}>ខែនេះ</option>
+              {[...Array(6)].map((_, i) => {
+                const d = new Date()
+                d.setMonth(d.getMonth() - (i + 1))
+                const val = d.toISOString().slice(0, 7)
+                return <option key={val} value={val}>{val}</option>
+              })}
+            </select>
+          </div>
+
+          <div className="flex-1 flex items-center gap-2 bg-surface border border-border rounded-lg px-3 py-2">
+            <select 
+              value={filterCategory} 
+              onChange={(e) => setFilterCategory(e.target.value)}
+              className="bg-transparent text-text text-sm focus:outline-none w-full"
+            >
+              <option value="all">គ្រប់ប្រភេទ</option>
+              {EXPENSE_CATEGORIES.map(cat => (
+                <option key={cat.id} value={cat.id}>{cat.icon} {cat.label}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -108,7 +148,7 @@ export default function ExpensesPage() {
           <EmptyState 
             icon={Wallet}
             title="គ្មានទិន្នន័យ"
-            description="មិនមានការចំណាយសម្រាប់ខែ ឬប្រភេទដែលអ្នកបានជ្រើសរើសឡើយ។"
+            description="មិនមានការចំណាយសម្រាប់ការស្វែងរករបស់អ្នកឡើយ។"
             action={<Button onClick={() => setShowForm(true)}>បន្ថែមចំណាយ</Button>}
           />
         ) : (

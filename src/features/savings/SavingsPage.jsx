@@ -58,8 +58,6 @@ export default function SavingsPage() {
   // មុខងារចែករំលែក (Share)
   const handleShare = async (goalId, goalName) => {
     const url = `${window.location.origin}/savings?join=${goalId}`
-    
-    // ប្រើ Web Share API បើទូរស័ព្ទគាំទ្រ
     if (navigator.share) {
       try {
         await navigator.share({
@@ -71,13 +69,12 @@ export default function SavingsPage() {
         console.log('Error sharing:', err)
       }
     } else {
-      // បើលើកុំព្យូទ័រ ឬ Browser មិនគាំទ្រ ឱ្យ Copy វិញ
       navigator.clipboard.writeText(url)
       toast.success('បានចម្លង Link អញ្ជើញ! សូមផ្ញើទៅមិត្តភក្តិរបស់អ្នក។')
     }
   }
 
-  // មុខងារ AI ស្កេនវិក័យប័ត្រ
+  // មុខងារ AI ស្កេនវិក័យប័ត្រ (អានទាំងលុយ និង Note)
   const processImage = async (file) => {
     if (!file || !file.type.startsWith('image/')) return toast.error('សូមជ្រើសរើសរូបភាព')
     
@@ -97,8 +94,14 @@ export default function SavingsPage() {
             messages: [{
               role: 'user',
               content: [
-                { type: 'text', text: "Extract the total amount from this receipt. Return ONLY a valid JSON object with key: 'amount'." },
-                { type: 'image_url', image_url: { url: `data:${file.type};base64,${base64Image}` } }
+                { 
+                  type: 'text', 
+                  text: "Extract the total amount (number only) and a short note from this receipt. Return ONLY a valid JSON object with keys: 'amount', 'note'. Do not include markdown formatting." 
+                },
+                { 
+                  type: 'image_url', 
+                  image_url: { url: `data:${file.type};base64,${base64Image}` } 
+                }
               ]
             }],
             temperature: 0.1
@@ -108,6 +111,7 @@ export default function SavingsPage() {
         let text = data.choices[0].message.content.replace(/```json/g, '').replace(/```/g, '').trim()
         const result = JSON.parse(text)
         setAmount(result.amount?.toString() || '')
+        setNote(result.note || '')
         toast.success('AI អានវិក័យប័ត្រជោគជ័យ!')
       } catch (error) {
         toast.error('មិនអាចអានវិក័យប័ត្របានទេ')
@@ -117,21 +121,27 @@ export default function SavingsPage() {
     }
   }
 
-  const handlePaste = (e) => {
-    const items = e.clipboardData?.items
-    if (!items) return
-    for (let i = 0; i < items.length; i++) {
-      if (items[i].type.indexOf('image') !== -1) {
-        processImage(items[i].getAsFile())
-        break
+  // មុខងារ Paste ពី Clipboard (ដំណើរការលើទូរស័ព្ទ និងកុំព្យូទ័រ)
+  const handlePasteButtonClick = async () => {
+    try {
+      if (!navigator.clipboard || !navigator.clipboard.read) {
+        return toast.error('ទូរស័ព្ទរបស់អ្នកមិនគាំទ្រការ Paste រូបភាពទេ។ សូមប្រើប៊ូតុងថតរូបជំនួសវិញ។')
       }
+      const items = await navigator.clipboard.read()
+      for (const item of items) {
+        const imageType = item.types.find(type => type.startsWith('image/'))
+        if (imageType) {
+          const blob = await item.getType(imageType)
+          const file = new File([blob], "pasted-image.png", { type: imageType })
+          processImage(file)
+          return
+        }
+      }
+      toast.error('រកមិនឃើញរូបភាពនៅក្នុង Clipboard ទេ។')
+    } catch (error) {
+      toast.error('សូមអនុញ្ញាតឱ្យចូលប្រើ Clipboard ឬជ្រើសរើសរូបភាពពី Gallery។')
     }
   }
-
-  useEffect(() => {
-    if (activeGoal) document.addEventListener('paste', handlePaste)
-    return () => document.removeEventListener('paste', handlePaste)
-  }, [activeGoal])
 
   const handleContribute = async (e) => {
     e.preventDefault()
@@ -169,7 +179,6 @@ export default function SavingsPage() {
                   <h3 className="font-semibold text-text">{goal.name}</h3>
                 </div>
                 <div className="flex items-center opacity-100 sm:opacity-0 group-hover:opacity-100 transition">
-                  {/* ប៊ូតុង Share */}
                   <button onClick={() => handleShare(goal.id, goal.name)} className="text-text-muted hover:text-primary p-1 mr-1" title="ចែករំលែក">
                     <Share2 className="h-4 w-4" />
                   </button>
@@ -200,7 +209,7 @@ export default function SavingsPage() {
         })}
       </div>
 
-      {/* Modal សម្រាប់ដាក់លុយ (Contribute) */}
+      {/* Modal សម្រាប់ដាក់លុយ និងស្កេនវិក័យប័ត្រ */}
       {activeGoal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-up">
           <div className="card w-full max-w-md bg-surface border-border">
@@ -211,10 +220,11 @@ export default function SavingsPage() {
               <div className="grid grid-cols-2 gap-2">
                 <label className="flex flex-col items-center justify-center h-24 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-surface-hover">
                   {loadingScan ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : <Camera className="h-6 w-6 text-text-muted mb-1" />}
-                  <span className="text-xs text-text text-center px-2">{loadingScan ? 'AI កំពុងអាន...' : 'ជ្រើសរើសរូបភាព'}</span>
-                  <input type="file" accept="image/*" className="hidden" onChange={(e) => processImage(e.target.files[0])} />
+                  <span className="text-xs text-text text-center px-2">{loadingScan ? 'AI កំពុងអាន...' : 'ថតរូបវិក័យប័ត្រ'}</span>
+                  {/* បន្ថែម capture="environment" ដើម្បីបើកកាមេរ៉ាផ្ទាល់ */}
+                  <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => processImage(e.target.files[0])} />
                 </label>
-                <button type="button" onClick={() => document.dispatchEvent(new ClipboardEvent('paste'))} className="flex flex-col items-center justify-center h-24 border-2 border-dashed border-border rounded-lg hover:bg-surface-hover">
+                <button type="button" onClick={handlePasteButtonClick} className="flex flex-col items-center justify-center h-24 border-2 border-dashed border-border rounded-lg hover:bg-surface-hover">
                   <ClipboardPaste className="h-6 w-6 text-text-muted mb-1" />
                   <span className="text-xs text-text text-center px-2">Paste រូបភាព</span>
                 </button>

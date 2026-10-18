@@ -24,7 +24,15 @@ export default function SavingsPage() {
   // ពិនិត្យមើលថាតើមាន Link អញ្ជើញ (?join=...) ឬអត់
   useEffect(() => {
     const joinId = searchParams.get('join')
+    
     if (joinId) {
+      // ពិនិត្យមើលថាតើ ID នេះមានលក្ខណៈធម្មតាឬអត់ (ការពារកុំឱ្យគាំងពេល Scan ខុស)
+      if (joinId.length > 50 || joinId.includes('@') || joinId.includes(' ')) {
+        toast.error('Link អញ្ជើញនេះមិនត្រឹមត្រូវទេ!')
+        setSearchParams({})
+        return
+      }
+
       joinGoal(joinId).then(success => {
         if (success) {
           toast.success('អ្នកបានចូលរួមក្នុងគោលដៅសន្សំនេះហើយ!')
@@ -69,12 +77,15 @@ export default function SavingsPage() {
     }
   }
 
+  // មុខងារ AI ស្កេនវិក័យប័ត្រ
   const processImage = async (file) => {
     if (!file || !file.type.startsWith('image/')) return toast.error('សូមជ្រើសរើសរូបភាព')
+    
     setReceiptFile(file)
     setLoadingScan(true)
     const reader = new FileReader()
     reader.readAsDataURL(file)
+    
     reader.onload = async () => {
       try {
         const base64Image = reader.result.split(',')[1]
@@ -83,7 +94,13 @@ export default function SavingsPage() {
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_DEEPSEEK_API_KEY}` },
           body: JSON.stringify({
             model: 'deepseek-flash',
-            messages: [{ role: 'user', content: [{ type: 'text', text: "Extract the total amount from this receipt. Return ONLY a valid JSON object with key: 'amount'." }, { type: 'image_url', image_url: { url: `data:${file.type};base64,${base64Image}` } }] }],
+            messages: [{
+              role: 'user',
+              content: [
+                { type: 'text', text: "Extract the total amount from this receipt. Return ONLY a valid JSON object with key: 'amount'." },
+                { type: 'image_url', image_url: { url: `data:${file.type};base64,${base64Image}` } }
+              ]
+            }],
             temperature: 0.1
           })
         })
@@ -131,6 +148,7 @@ export default function SavingsPage() {
     <div className="max-w-3xl mx-auto space-y-6">
       <PageHeader title="Savings Goals" subtitle="សន្សំលុយរួមគ្នាជាមួយមិត្តភក្តិ" />
 
+      {/* បង្កើតគោលដៅថ្មី */}
       <Card>
         <form onSubmit={handleAddGoal} className="flex gap-3">
           <Input placeholder="ឈ្មោះគោលដៅ (ឧ. ទិញ Laptop)" value={name} onChange={e => setName(e.target.value)} />
@@ -139,6 +157,7 @@ export default function SavingsPage() {
         </form>
       </Card>
 
+      {/* បញ្ជីគោលដៅ */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {goals.map(goal => {
           const percent = Math.min((goal.current_amount / goal.target_amount) * 100, 100)
@@ -187,6 +206,8 @@ export default function SavingsPage() {
           <div className="card w-full max-w-md bg-surface border-border">
             <h3 className="text-lg font-semibold text-text mb-4">ដាក់លុយចូល: {activeGoal.name}</h3>
             <form onSubmit={handleContribute} className="space-y-4">
+              
+              {/* ប្រអប់ស្កេនវិក័យប័ត្រ */}
               <div className="grid grid-cols-2 gap-2">
                 <label className="flex flex-col items-center justify-center h-24 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-surface-hover">
                   {loadingScan ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : <Camera className="h-6 w-6 text-text-muted mb-1" />}
@@ -198,6 +219,7 @@ export default function SavingsPage() {
                   <span className="text-xs text-text text-center px-2">Paste រូបភាព</span>
                 </button>
               </div>
+
               <div>
                 <label className="text-sm text-text-secondary mb-1 block">ចំនួនទឹកប្រាក់ ($)</label>
                 <Input type="number" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" required />
@@ -206,6 +228,7 @@ export default function SavingsPage() {
                 <label className="text-sm text-text-secondary mb-1 block">សារលើកទឹកចិត្ត (Note)</label>
                 <Input value={note} onChange={e => setNote(e.target.value)} placeholder="សរសេរអ្វីមួយ..." />
               </div>
+
               <div className="flex justify-end gap-2 mt-6">
                 <Button type="button" variant="ghost" onClick={() => { setActiveGoal(null); setReceiptFile(null); }}>បោះបង់</Button>
                 <Button type="submit">ដាក់លុយ</Button>

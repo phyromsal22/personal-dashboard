@@ -9,7 +9,7 @@ import SettingsPage from '@/features/settings/SettingsPage'
 import LoginPage from '@/features/auth/LoginPage'
 import UpdatePasswordPage from '@/features/auth/UpdatePasswordPage'
 import SavingsPage from '@/features/savings/SavingsPage' // បន្ថែម
-
+import { ErrorPage } from '@/components/shared/ErrorPage'
 const router = createBrowserRouter([
   { path: '/', element: <LandingPage /> },
   { path: '/login', element: <LoginPage /> },
@@ -17,6 +17,7 @@ const router = createBrowserRouter([
   {
     path: '/',
     element: <AppLayout />,
+    errorElement: <ErrorPage />,
     children: [
       { path: 'dashboard', element: <DashboardPage /> },
       { path: 'habits', element: <HabitsPage /> },

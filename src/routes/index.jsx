@@ -5,10 +5,12 @@ import HabitsPage from '@/features/habits/HabitsPage'
 import ExpensesPage from '@/features/expenses/ExpensesPage'
 import MoodPage from '@/features/mood/MoodPage'
 import SettingsPage from '@/features/settings/SettingsPage'
-import LoginPage from '@/features/auth/LoginPage' // បន្ថែម
+import LoginPage from '@/features/auth/LoginPage'
+import UpdatePasswordPage from '@/features/auth/UpdatePasswordPage' // បន្ថែម
 
 const router = createBrowserRouter([
-  { path: '/login', element: <LoginPage /> }, // បន្ថែម Route នេះ
+  { path: '/login', element: <LoginPage /> },
+  { path: '/update-password', element: <UpdatePasswordPage /> }, // បន្ថែម Route នេះ
   {
     path: '/',
     element: <AppLayout />,

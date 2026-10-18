@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Wallet, Filter } from 'lucide-react'
+import { Plus, Wallet, Filter, Download } from 'lucide-react' // បន្ថែម Download
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { Button } from '@/components/ui/button'
@@ -9,6 +9,7 @@ import { ExpenseForm } from './components/ExpenseForm'
 import { ExpenseItem } from './components/ExpenseItem'
 import { formatCurrency } from '@/lib/formatters'
 import { EXPENSE_CATEGORIES } from '@/lib/constants'
+import { exportToCSV } from './utils' // បន្ថែម Import នេះ
 
 export default function ExpensesPage() {
   const expenses = useExpensesStore((state) => state.expenses)
@@ -17,11 +18,9 @@ export default function ExpensesPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingExpense, setEditingExpense] = useState(null)
   
-  // បន្ថែម State សម្រាប់ Filter
-  const [filterMonth, setFilterMonth] = useState(new Date().toISOString().slice(0, 7)) // យកខែបច្ចុប្បន្ន (YYYY-MM)
+  const [filterMonth, setFilterMonth] = useState(new Date().toISOString().slice(0, 7))
   const [filterCategory, setFilterCategory] = useState('all')
 
-  // គណនាទឹកប្រាក់សរុបដោយផ្អែកលើ Filter
   const filteredExpenses = expenses.filter((expense) => {
     const matchMonth = expense.date.startsWith(filterMonth)
     const matchCategory = filterCategory === 'all' || expense.category === filterCategory
@@ -46,13 +45,18 @@ export default function ExpensesPage() {
         title="Expenses" 
         subtitle="តាមដានការចំណាយរបស់អ្នក" 
         action={
-          <Button onClick={() => setShowForm(true)}>
-            <Plus className="h-4 w-4" /> បន្ថែម
-          </Button>
+          <div className="flex gap-2">
+            {/* បន្ថែមប៊ូតុង Export */}
+            <Button variant="secondary" onClick={() => exportToCSV(filteredExpenses)}>
+              <Download className="h-4 w-4" /> <span className="hidden sm:inline">ទាញយក</span>
+            </Button>
+            <Button onClick={() => setShowForm(true)}>
+              <Plus className="h-4 w-4" /> បន្ថែម
+            </Button>
+          </div>
         }
       />
 
-      {/* ប្រអប់សរុបចំណាយ */}
       <div className="card mb-6 flex items-center justify-between bg-primary/5 border-primary/20">
         <div>
           <p className="text-sm text-text-secondary mb-1">ចំណាយសរុប (តាមការជ្រើសរើស)</p>
@@ -61,7 +65,6 @@ export default function ExpensesPage() {
         <Wallet className="h-10 w-10 text-primary/50" />
       </div>
 
-      {/* ប្រអប់ Filter */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="flex-1 flex items-center gap-2 bg-surface border border-border rounded-lg px-3 py-2">
           <Filter className="h-4 w-4 text-text-muted" />
@@ -71,7 +74,6 @@ export default function ExpensesPage() {
             className="bg-transparent text-text text-sm focus:outline-none w-full"
           >
             <option value={new Date().toISOString().slice(0, 7)}>ខែនេះ</option>
-            {/* បង្កើតជម្រើស ៦ ខែថយក្រោយ */}
             {[...Array(6)].map((_, i) => {
               const d = new Date()
               d.setMonth(d.getMonth() - (i + 1))

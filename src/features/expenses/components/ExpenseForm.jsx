@@ -5,7 +5,7 @@ import { useExpensesStore } from '@/store/expensesStore'
 import { EXPENSE_CATEGORIES } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
-import { Camera, Loader2 } from 'lucide-react'
+import { Camera, Loader2, ClipboardPaste } from 'lucide-react'
 
 export function ExpenseForm({ onClose, initialData }) {
   const [amount, setAmount] = useState('')
@@ -24,10 +24,11 @@ export function ExpenseForm({ onClose, initialData }) {
     }
   }, [initialData])
 
-  // មុខងារស្កេនវិក័យប័ត្រដោយ AI (Gemini)
-  const handleScanReceipt = async (e) => {
-    const file = e.target.files[0]
-    if (!file) return
+  // មុខងារកណ្តាលសម្រាប់យករូបភាពទៅឱ្យ AI អាន
+  const processImage = async (file) => {
+    if (!file.type.startsWith('image/')) {
+      return toast.error('សូមជ្រើសរើស ឬ Paste តែរូបភាពប៉ុណ្ណោះ')
+    }
 
     setLoadingScan(true)
     const reader = new FileReader()
@@ -69,6 +70,34 @@ export function ExpenseForm({ onClose, initialData }) {
     }
   }
 
+  // មុខងារសម្រាប់ការជ្រើសរើសរូបភាពពី File
+  const handleFileChange = (e) => {
+    const file = e.target.files[0]
+    if (file) processImage(file)
+  }
+
+  // មុខងារសម្រាប់ការ Paste រូបភាព (Ctrl+V)
+  const handlePaste = (e) => {
+    const items = e.clipboardData?.items
+    if (!items) return
+
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile()
+        processImage(file)
+        break
+      }
+    }
+  }
+
+  // ភ្ជាប់ Event Listener សម្រាប់ការ Paste ពេល Form បើក
+  useEffect(() => {
+    document.addEventListener('paste', handlePaste)
+    return () => {
+      document.removeEventListener('paste', handlePaste)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!amount || isNaN(amount)) return
@@ -88,15 +117,26 @@ export function ExpenseForm({ onClose, initialData }) {
     <form onSubmit={handleSubmit} className="card mb-6 animate-fade-up border-primary/30">
       <h3 className="font-semibold mb-4">{initialData ? 'កែប្រែការចំណាយ' : 'បន្ថែមចំណាយថ្មី'}</h3>
       
-      {/* ប៊ូតុងស្កេនវិក័យប័ត្រ */}
+      {/* ប្រអប់ស្កេនវិក័យប័ត្រ (គាំទ្រទាំងការចុច និងការ Paste) */}
       {!initialData && (
         <div className="mb-4">
-          <label className="flex items-center justify-center w-full h-24 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-surface-hover transition-colors">
-            <div className="flex flex-col items-center">
-              {loadingScan ? <Loader2 className="h-6 w-6 animate-spin text-primary mb-2" /> : <Camera className="h-6 w-6 text-text-muted mb-2" />}
-              <span className="text-sm text-text-secondary">{loadingScan ? 'AI កំពុងអាន...' : 'ចុចដើម្បីស្កេនវិក័យប័ត្រ'}</span>
+          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-surface-hover transition-colors">
+            <div className="flex flex-col items-center text-center p-4">
+              {loadingScan ? (
+                <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+              ) : (
+                <div className="flex gap-2 mb-2 text-text-muted">
+                  <Camera className="h-8 w-8" />
+                  <span className="text-2xl font-light">/</span>
+                  <ClipboardPaste className="h-8 w-8" />
+                </div>
+              )}
+              <span className="text-sm font-medium text-text">
+                {loadingScan ? 'AI កំពុងអានរូបភាព...' : 'ចុចដើម្បីស្កេន ឬ Paste (Ctrl+V)'}
+              </span>
+              <span className="text-xs text-text-muted mt-1">អ្នកអាច Copy រូបភាពវិក័យប័ត្រ រួចចុច Ctrl+V នៅទីនេះ</span>
             </div>
-            <input type="file" accept="image/*" className="hidden" onChange={handleScanReceipt} disabled={loadingScan} />
+            <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} disabled={loadingScan} />
           </label>
         </div>
       )}
@@ -104,7 +144,15 @@ export function ExpenseForm({ onClose, initialData }) {
       <div className="space-y-4">
         <div>
           <label className="text-sm text-text-secondary mb-1 block">ចំនួនទឹកប្រាក់ ($)</label>
-          <Input type="number" step="0.01" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} />
+          <Input 
+            type="number" 
+            name="amount"
+            step="0.01" 
+            placeholder="0.00" 
+            value={amount} 
+            onChange={(e) => setAmount(e.target.value)} 
+            disabled={loadingScan}
+          />
         </div>
 
         <div>
@@ -115,9 +163,11 @@ export function ExpenseForm({ onClose, initialData }) {
                 key={cat.id}
                 type="button"
                 onClick={() => setCategory(cat.id)}
+                disabled={loadingScan}
                 className={cn(
                   "p-2 rounded-lg border text-sm flex items-center justify-center gap-2 transition-all",
-                  category === cat.id ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-surface-hover"
+                  category === cat.id ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-surface-hover",
+                  loadingScan && "opacity-50 cursor-not-allowed"
                 )}
               >
                 <span>{cat.icon}</span> {cat.label}
@@ -128,13 +178,21 @@ export function ExpenseForm({ onClose, initialData }) {
 
         <div>
           <label className="text-sm text-text-secondary mb-1 block">ចំណាំ (ស្រេចចិត្ត)</label>
-          <Input placeholder="ឧ. ទិញកាហ្វេ..." value={note} onChange={(e) => setNote(e.target.value)} />
+          <Input 
+            name="note"
+            placeholder="ឧ. ទិញកាហ្វេ..." 
+            value={note} 
+            onChange={(e) => setNote(e.target.value)} 
+            disabled={loadingScan}
+          />
         </div>
       </div>
 
       <div className="flex justify-end gap-2 mt-6">
-        <Button type="button" variant="ghost" onClick={onClose}>បោះបង់</Button>
-        <Button type="submit" disabled={loadingScan}>{initialData ? 'រក្សាទុកការកែប្រែ' : 'រក្សាទុក'}</Button>
+        <Button type="button" variant="ghost" onClick={onClose} disabled={loadingScan}>បោះបង់</Button>
+        <Button type="submit" disabled={loadingScan}>
+          {initialData ? 'រក្សាទុកការកែប្រែ' : 'រក្សាទុក'}
+        </Button>
       </div>
     </form>
   )

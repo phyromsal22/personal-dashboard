@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { User, Mail, KeyRound, Target } from 'lucide-react'
+import { User, Mail, KeyRound, Target, Palette } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -7,14 +7,15 @@ import { Input } from '@/components/ui/input'
 import { supabase } from '@/lib/supabase'
 import { useSettingsStore } from '@/store/settingsStore'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 
 export default function SettingsPage() {
   const [email, setEmail] = useState('កំពុងផ្ទុក...')
   const [newPassword, setNewPassword] = useState('')
   const [loading, setLoading] = useState(false)
   
-  // ទាញយក Budget ពី Store
-  const { monthlyBudget, setBudget } = useSettingsStore()
+  // ទាញយក Settings ពី Store
+  const { monthlyBudget, setBudget, accentColor, setAccentColor } = useSettingsStore()
   const [budgetInput, setBudgetInput] = useState(monthlyBudget)
 
   useEffect(() => {
@@ -42,6 +43,14 @@ export default function SettingsPage() {
     toast.success('បានកំណត់ថវិកាប្រចាំខែដោយជោគជ័យ!')
   }
 
+  // ពណ៌ដែលអាចជ្រើសរើសបាន
+  const colors = [
+    { id: 'indigo', name: 'ស្វាយ', bg: 'bg-[#6366F1]' },
+    { id: 'emerald', name: 'បៃតង', bg: 'bg-[#10B981]' },
+    { id: 'rose', name: 'ផ្កាឈូក', bg: 'bg-[#F43F5E]' },
+    { id: 'amber', name: 'មាស', bg: 'bg-[#F59E0B]' },
+  ]
+
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <PageHeader title="Settings" subtitle="គ្រប់គ្រងគណនី និងការកំណត់របស់អ្នក" />
@@ -64,6 +73,30 @@ export default function SettingsPage() {
         </div>
       </Card>
 
+      {/* ជ្រើសរើសពណ៌ App (Theme) */}
+      <Card>
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Palette className="h-5 w-5 text-primary" /> ពណ៌របស់ App
+        </h3>
+        <div className="flex gap-3">
+          {colors.map((color) => (
+            <button
+              key={color.id}
+              onClick={() => {
+                setAccentColor(color.id)
+                toast.success(`បានប្តូរពណ៌ទៅជា ${color.name}`)
+              }}
+              className={cn(
+                "h-12 w-12 rounded-full flex items-center justify-center transition-all",
+                color.bg,
+                accentColor === color.id ? "ring-4 ring-primary/40 scale-110" : "opacity-70 hover:opacity-100"
+              )}
+              title={color.name}
+            />
+          ))}
+        </div>
+      </Card>
+
       {/* កំណត់ថវិកាប្រចាំខែ */}
       <Card>
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -79,7 +112,6 @@ export default function SettingsPage() {
           />
           <Button type="submit" variant="secondary">រក្សាទុក</Button>
         </form>
-        <p className="text-xs text-text-muted mt-2">ថវិកានេះនឹងបង្ហាញនៅលើ Dashboard ដើម្បីព្រមានអ្នកពេលចំណាយលើសកំណត់។</p>
       </Card>
 
       {/* ប្តូរលេខសម្ងាត់ */}

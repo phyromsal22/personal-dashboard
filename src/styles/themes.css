@@ -28,3 +28,23 @@
   --text-secondary: 71 85 105;
   --text-muted: 148 163 184;
 }
+/* បន្ថែម Theme ពណ៌ផ្សេងៗ */
+:root[data-accent='indigo'] {
+  --primary: 99 102 241;        /* ស្វាយ (លំនាំដើម) */
+  --primary-glow: 129 140 248;
+}
+
+:root[data-accent='emerald'] {
+  --primary: 16 185 129;        /* បៃតង */
+  --primary-glow: 52 211 153;
+}
+
+:root[data-accent='rose'] {
+  --primary: 244 63 94;         /* ផ្កាឈូក/ក្រហម */
+  --primary-glow: 251 113 133;
+}
+
+:root[data-accent='amber'] {
+  --primary: 245 158 11;        /* មាស/លឿង */
+  --primary-glow: 251 191 36;
+}

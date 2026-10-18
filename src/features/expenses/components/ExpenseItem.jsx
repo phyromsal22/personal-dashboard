@@ -31,8 +31,7 @@ export function ExpenseItem({ expense, onEdit }) { // ទទួល onEdit prop
         </div>
         
         <div className="flex items-center gap-2">
-          <span className="font-semibold text-danger mr-2">-{formatCurrency(expense.amount)}</span>
-          
+          <span className="font-semibold text-danger">-{formatCurrency(expense.amount, expense.currency)}</span>
           <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
             <button onClick={() => onEdit(expense)} className="text-text-muted hover:text-primary p-2 transition-colors">
               <Pencil className="h-4 w-4" />

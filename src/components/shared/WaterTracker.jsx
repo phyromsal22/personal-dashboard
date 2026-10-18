@@ -6,7 +6,7 @@ import { useWaterStore } from '@/store/waterStore'
 
 export function WaterTracker() {
   const { waterAmount, fetchWater, addWater } = useWaterStore()
-  const target = 8 // គោលដៅ ៨ កែវ
+  const target = 2.0 // គោលដៅ ២ លីត្រ
   const percent = Math.min((waterAmount / target) * 100, 100)
 
   useEffect(() => { fetchWater() }, [fetchWater])
@@ -18,7 +18,10 @@ export function WaterTracker() {
           <Droplets className="h-5 w-5 text-blue-500" />
           <h3 className="font-semibold text-text">ការផឹកទឹក</h3>
         </div>
-        <span className="text-sm font-bold text-blue-500">{waterAmount} / {target} កែវ</span>
+        {/* បង្ហាញជាលីត្រ (ទសភាគ ២ ខ្ទង់) */}
+        <span className="text-sm font-bold text-blue-500">
+          {Number(waterAmount).toFixed(2)} / {target.toFixed(1)} លីត្រ
+        </span>
       </div>
       
       <div className="h-3 w-full bg-surface-hover rounded-full overflow-hidden mb-4">
@@ -27,8 +30,9 @@ export function WaterTracker() {
 
       <div className="flex justify-between items-center">
         <p className="text-xs text-text-muted">{percent.toFixed(0)}% សម្រេច</p>
-        <Button size="sm" variant="secondary" onClick={() => addWater(1)}>
-          <Plus className="h-4 w-4 mr-1" /> ផឹក ១ កែវ
+        {/* ប៊ូតុងបន្ថែម ០.២៥ លីត្រ */}
+        <Button size="sm" variant="secondary" onClick={() => addWater(0.25)}>
+          <Plus className="h-4 w-4 mr-1" /> ផឹក ០.២៥ លីត្រ
         </Button>
       </div>
     </Card>

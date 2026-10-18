@@ -19,7 +19,7 @@ export default function ExpensesPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingExpense, setEditingExpense] = useState(null)
   
-  // បន្ថែម State សម្រាប់ Filter និង Sort
+  // Filter State
   const [filterMonth, setFilterMonth] = useState(new Date().toISOString().slice(0, 7))
   const [filterCategory, setFilterCategory] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
@@ -41,7 +41,9 @@ export default function ExpensesPage() {
       return 0
     })
 
-  const total = filteredExpenses.reduce((sum, item) => sum + item.amount, 0)
+  // បំបែកការគណនាតាមរូបិយប័ណ្ណ
+  const totalUSD = filteredExpenses.filter(e => e.currency !== 'KHR').reduce((sum, item) => sum + item.amount, 0)
+  const totalKHR = filteredExpenses.filter(e => e.currency === 'KHR').reduce((sum, item) => sum + item.amount, 0)
 
   const handleEdit = (expense) => {
     setEditingExpense(expense)
@@ -70,17 +72,20 @@ export default function ExpensesPage() {
         }
       />
 
-      <div className="card mb-6 flex items-center justify-between bg-primary/5 border-primary/20">
+      {/* ប្រអប់សរុបចំណាយ */}
+      <div className="card mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between bg-primary/5 border-primary/20 gap-4">
         <div>
           <p className="text-sm text-text-secondary mb-1">ចំណាយសរុប (តាមការជ្រើសរើស)</p>
-          <h2 className="text-3xl font-bold text-text">{formatCurrency(total)}</h2>
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            <h2 className="text-3xl font-bold text-text">{formatCurrency(totalUSD, 'USD')}</h2>
+            {totalKHR > 0 && <h2 className="text-3xl font-bold text-text">{formatCurrency(totalKHR, 'KHR')}</h2>}
+          </div>
         </div>
-        <Wallet className="h-10 w-10 text-primary/50" />
+        <Wallet className="h-10 w-10 text-primary/50 hidden sm:block" />
       </div>
 
       {/* ប្រអប់ Search និង Filter */}
       <div className="space-y-3 mb-6">
-        {/* ជួរទី ១៖ Search និង Sort */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
@@ -103,7 +108,6 @@ export default function ExpensesPage() {
           </select>
         </div>
 
-        {/* ជួរទី ២៖ Filter ខែ និងប្រភេទ */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1 flex items-center gap-2 bg-surface border border-border rounded-lg px-3 py-2">
             <Filter className="h-4 w-4 text-text-muted" />

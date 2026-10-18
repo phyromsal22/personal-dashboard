@@ -17,20 +17,23 @@ export const useWaterStore = create((set, get) => ({
       .select('amount')
       .eq('user_id', user.id)
       .eq('date', today)
-      .single()
+      .maybeSingle()
     
-    if (data) set({ waterAmount: data.amount, loading: false })
-    else set({ waterAmount: 0, loading: false })
+    if (data) {
+      set({ waterAmount: Number(data.amount), loading: false })
+    } else {
+      set({ waterAmount: 0, loading: false })
+    }
   },
 
-  addWater: async (glasses) => {
+  addWater: async (liters) => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
     const today = todayKey()
-    const newAmount = get().waterAmount + glasses
+    // បូកបញ្ចូលគ្នាជាលេខទសភាគ
+    const newAmount = Number(get().waterAmount) + Number(liters)
 
-    // Upsert ទិន្នន័យ (បើមានហើយ កែថ្មី បើគ្មាន បង្កើតថ្មី)
     const { error } = await supabase.from('water_intake').upsert({
       user_id: user.id,
       date: today,

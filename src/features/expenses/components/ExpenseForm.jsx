@@ -10,6 +10,7 @@ import { Camera, Loader2, ClipboardPaste } from 'lucide-react'
 export function ExpenseForm({ onClose, initialData }) {
   const [amount, setAmount] = useState('')
   const [category, setCategory] = useState('food')
+  const [currency, setCurrency] = useState('USD') // បន្ថែម State សម្រាប់រូបិយប័ណ្ណ
   const [note, setNote] = useState('')
   const [loadingScan, setLoadingScan] = useState(false)
   
@@ -20,6 +21,7 @@ export function ExpenseForm({ onClose, initialData }) {
     if (initialData) {
       setAmount(initialData.amount)
       setCategory(initialData.category)
+      setCurrency(initialData.currency || 'USD')
       setNote(initialData.note || '')
     }
   }, [initialData])
@@ -37,57 +39,53 @@ export function ExpenseForm({ onClose, initialData }) {
     reader.onload = async () => {
       try {
         const base64Image = reader.result.split(',')[1]
-        // កំណត់ mime_type ឱ្យបានច្បាស់លាស់ (បើ file.type ទទេ ឱ្យប្រើ image/jpeg)
         const mimeType = file.type || 'image/jpeg'
 
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{
-                parts: [
-                  { text: "Analyze this receipt image. Extract the total amount (number only), guess the category (choose from: food, transport, shopping, other), and write a short note (e.g. coffee, taxi). Return ONLY a valid JSON object with keys: 'amount', 'category', 'note'. Do not include markdown formatting." },
+        const response = await fetch('https://api.deepseek.com/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_DEEPSEEK_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: 'deepseek-flash',
+            messages: [
+              {
+                role: 'user',
+                content: [
                   { 
-                    inline_data: { 
-                      mime_type: mimeType, 
-                      data: base64Image 
+                    type: 'text', 
+                    text: "Analyze this receipt image. Extract the total amount (number only), guess the category (choose from: food, transport, shopping, other), detect if the currency is USD or KHR, and write a short note. Return ONLY a valid JSON object with keys: 'amount', 'category', 'currency', 'note'. Do not include markdown formatting." 
+                  },
+                  { 
+                    type: 'image_url', 
+                    image_url: { 
+                      url: `data:${mimeType};base64,${base64Image}` 
                     } 
                   }
                 ]
-              }]
-            })
-          }
-        )
+              }
+            ],
+            temperature: 0.1
+          })
+        })
 
-        // ពិនិត្យមើលថាតើ Response មានបញ្ហាឬអត់
-        if (!response.ok) {
-          const errData = await response.json()
-          console.error('Gemini API Error:', errData)
-          throw new Error(errData.error?.message || 'API request failed')
-        }
+        if (!response.ok) throw new Error('API request failed')
 
         const data = await response.json()
-        
-        // ពិនិត្យមើលថាតើមាន candidates ឬអត់
-        if (!data.candidates || !data.candidates[0]?.content?.parts?.[0]?.text) {
-          throw new Error('AI មិនអាចអានរូបភាពនេះបានទេ')
-        }
-
-        let text = data.candidates[0].content.parts[0].text
-        // សម្អាត Markdown formatting ដែល AI អាចបន្ថែមមក
+        let text = data.choices[0].message.content
         text = text.replace(/```json/g, '').replace(/```/g, '').trim()
         
         const result = JSON.parse(text)
         
         setAmount(result.amount?.toString() || '0')
         setCategory(result.category || 'other')
+        setCurrency(result.currency === 'KHR' ? 'KHR' : 'USD')
         setNote(result.note || '')
         toast.success('ស្កេនវិក័យប័ត្រជោគជ័យ!')
       } catch (error) {
         console.error('Scan Error:', error)
-        toast.error(error.message || 'មិនអាចអានរូបភាពបានទេ សូមព្យាយាមម្តងទៀត')
+        toast.error('មិនអាចអានរូបភាពបានទេ សូមព្យាយាមម្តងទៀត')
       } finally {
         setLoadingScan(false)
       }
@@ -100,11 +98,10 @@ export function ExpenseForm({ onClose, initialData }) {
     if (file) processImage(file)
   }
 
-  // មុខងារសម្រាប់ការ Paste រូបភាព (Ctrl+V)
+  // មុខងារសម្រាប់ការ Paste រូបភាព (Ctrl+V) នៅលើកុំព្យូទ័រ
   const handlePaste = (e) => {
     const items = e.clipboardData?.items
     if (!items) return
-
     for (let i = 0; i < items.length; i++) {
       if (items[i].type.indexOf('image') !== -1) {
         const file = items[i].getAsFile()
@@ -117,15 +114,15 @@ export function ExpenseForm({ onClose, initialData }) {
   // ភ្ជាប់ Event Listener សម្រាប់ការ Paste ពេល Form បើក
   useEffect(() => {
     document.addEventListener('paste', handlePaste)
-    return () => {
-      document.removeEventListener('paste', handlePaste)
-    }
+    return () => document.removeEventListener('paste', handlePaste)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!amount || isNaN(amount)) return
-    const data = { amount: parseFloat(amount), category, note }
+    
+    // បញ្ជូន currency ទៅជាមួយ
+    const data = { amount: parseFloat(amount), category, currency, note }
 
     if (initialData) {
       updateExpense(initialData.id, data)
@@ -141,7 +138,7 @@ export function ExpenseForm({ onClose, initialData }) {
     <form onSubmit={handleSubmit} className="card mb-6 animate-fade-up border-primary/30">
       <h3 className="font-semibold mb-4">{initialData ? 'កែប្រែការចំណាយ' : 'បន្ថែមចំណាយថ្មី'}</h3>
       
-      {/* ប្រអប់ស្កេនវិក័យប័ត្រ (គាំទ្រទាំងការចុច និងការ Paste) */}
+      {/* ប្រអប់ស្កេនវិក័យប័ត្រ (គាំទ្រទាំងការចុចលើទូរស័ព្ទ និង Paste លើកុំព្យូទ័រ) */}
       {!initialData && (
         <div className="mb-4">
           <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-surface-hover transition-colors">
@@ -156,9 +153,11 @@ export function ExpenseForm({ onClose, initialData }) {
                 </div>
               )}
               <span className="text-sm font-medium text-text">
-                {loadingScan ? 'AI កំពុងអានរូបភាព...' : 'ចុចដើម្បីស្កេន ឬ Paste (Ctrl+V)'}
+                {loadingScan ? 'AI កំពុងអានរូបភាព...' : 'ចុចទីនេះដើម្បីស្កេនវិក័យប័ត្រ'}
               </span>
-              <span className="text-xs text-text-muted mt-1">អ្នកអាច Copy រូបភាពវិក័យប័ត្រ រួចចុច Ctrl+V នៅទីនេះ</span>
+              <span className="text-xs text-text-muted mt-1">
+                (លើកុំព្យូទ័រ អ្នកអាច Copy រួចចុច Ctrl+V បាន)
+              </span>
             </div>
             <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} disabled={loadingScan} />
           </label>
@@ -167,16 +166,36 @@ export function ExpenseForm({ onClose, initialData }) {
 
       <div className="space-y-4">
         <div>
-          <label className="text-sm text-text-secondary mb-1 block">ចំនួនទឹកប្រាក់ ($)</label>
-          <Input 
-            type="number" 
-            name="amount"
-            step="0.01" 
-            placeholder="0.00" 
-            value={amount} 
-            onChange={(e) => setAmount(e.target.value)} 
-            disabled={loadingScan}
-          />
+          <label className="text-sm text-text-secondary mb-1 block">ចំនួនទឹកប្រាក់</label>
+          <div className="flex gap-2">
+            <Input 
+              type="number" 
+              name="amount"
+              step="0.01" 
+              placeholder="0.00" 
+              value={amount} 
+              onChange={(e) => setAmount(e.target.value)} 
+              disabled={loadingScan}
+              className="flex-1"
+            />
+            {/* ជម្រើសរូបិយប័ណ្ណ */}
+            <div className="flex bg-surface border border-border rounded-lg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setCurrency('USD')}
+                className={cn("px-4 py-2 text-sm font-medium transition-colors", currency === 'USD' ? "bg-primary text-white" : "text-text-secondary hover:bg-surface-hover")}
+              >
+                $
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrency('KHR')}
+                className={cn("px-4 py-2 text-sm font-medium transition-colors", currency === 'KHR' ? "bg-primary text-white" : "text-text-secondary hover:bg-surface-hover")}
+              >
+                ៛
+              </button>
+            </div>
+          </div>
         </div>
 
         <div>

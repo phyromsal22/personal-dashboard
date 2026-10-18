@@ -17,7 +17,6 @@ export function AISummary({ expenses }) {
     setSummary('')
 
     try {
-      // រៀបចំទិន្នន័យ
       const total = expenses.reduce((s, e) => s + e.amount, 0)
       const expenseList = expenses.map(e => {
         const cat = EXPENSE_CATEGORIES.find(c => c.id === e.category)?.label || e.category
@@ -26,7 +25,6 @@ export function AISummary({ expenses }) {
 
       const prompt = `Here is the user's expense data for this month: ${expenseList}. Total spent: $${total}.`
 
-      // ហៅ API របស់ DeepSeek
       const response = await fetch('https://api.deepseek.com/chat/completions', {
         method: 'POST',
         headers: {
@@ -45,13 +43,11 @@ export function AISummary({ expenses }) {
               content: prompt 
             }
           ],
-          temperature: 0.7 // កម្រិតភាពច្នៃប្រឌិតរបស់ AI
+          temperature: 0.7
         })
       })
 
       const data = await response.json()
-      
-      // ទាញយកអត្ថបទដែល AI ឆ្លើយតប
       const aiText = data.choices[0].message.content
       setSummary(aiText)
 

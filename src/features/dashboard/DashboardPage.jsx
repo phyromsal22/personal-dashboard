@@ -1,6 +1,7 @@
 import { Wallet, Flame, CheckCircle2, Smile } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { StatCard } from '@/components/shared/StatCard'
+import { AISummary } from '@/components/shared/AISummary' // បន្ថែម Import នេះ
 import { BarChartCard } from '@/components/charts/BarChartCard'
 import { PieChartCard } from '@/components/charts/PieChartCard'
 import { useHabitsStore } from '@/store/habitsStore'
@@ -16,12 +17,8 @@ export default function DashboardPage() {
   
   const today = todayKey()
   
-  // គណនាទិន្នន័យសម្រាប់បង្ហាញ
   const todayExpenses = expenses.filter(e => e.date.startsWith(today)).reduce((s, e) => s + e.amount, 0)
-  
-  // កែត្រង់នេះ៖ ប្តូរពី completedDates ទៅជា completed_dates វិញ
   const habitsDoneToday = habits.filter(h => h.completed_dates?.includes(today)).length
-  
   const currentMood = moods[today] ? ['😢', '😟', '😐', '🙂', '😄'][moods[today] - 1] : '➖'
   
   const chartData = getExpensesForLast7Days(expenses)
@@ -38,6 +35,9 @@ export default function DashboardPage() {
         <StatCard title="អារម្មណ៍ថ្ងៃនេះ" value={currentMood} icon={Smile} color="text-warning" />
         <StatCard title="ចំណាយសរុប" value={formatCurrency(expenses.reduce((s, e) => s + e.amount, 0))} icon={Flame} color="text-primary" />
       </div>
+
+      {/* ប្រអប់ AI Summary ត្រូវតែនៅទីនេះ */}
+      <AISummary expenses={expenses} />
 
       {/* ក្រាហ្វ Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

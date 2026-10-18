@@ -3,14 +3,16 @@ import { Plus, CheckSquare } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useHabitsStore } from '@/store/habitsStore'
 import { HabitForm } from './components/HabitForm'
 import { HabitItem } from './components/HabitItem'
 
 export default function HabitsPage() {
   const habits = useHabitsStore((state) => state.habits)
+  const loading = useHabitsStore((state) => state.loading)
   const [showForm, setShowForm] = useState(false)
-  const [editingHabit, setEditingHabit] = useState(null) // បន្ថែម State នេះ
+  const [editingHabit, setEditingHabit] = useState(null)
 
   const handleEdit = (habit) => {
     setEditingHabit(habit)
@@ -37,7 +39,12 @@ export default function HabitsPage() {
       {showForm && <HabitForm onClose={handleCloseForm} initialData={editingHabit} />}
 
       <div className="space-y-3">
-        {habits.length === 0 && !showForm ? (
+        {loading ? (
+          // បង្ហាញ Skeleton ពេលកំពុងទាញទិន្នន័យ
+          Array(3).fill(0).map((_, i) => (
+            <Skeleton key={i} className="h-20 w-full rounded-xl" />
+          ))
+        ) : habits.length === 0 && !showForm ? (
           <EmptyState 
             icon={CheckSquare}
             title="មិនទាន់មានទម្លាប់"

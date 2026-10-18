@@ -3,6 +3,7 @@ import { Plus, Wallet } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useExpensesStore } from '@/store/expensesStore'
 import { ExpenseForm } from './components/ExpenseForm'
 import { ExpenseItem } from './components/ExpenseItem'
@@ -10,9 +11,21 @@ import { formatCurrency } from '@/lib/formatters'
 
 export default function ExpensesPage() {
   const expenses = useExpensesStore((state) => state.expenses)
+  const loading = useExpensesStore((state) => state.loading)
   const [showForm, setShowForm] = useState(false)
+  const [editingExpense, setEditingExpense] = useState(null)
   
   const total = expenses.reduce((sum, item) => sum + item.amount, 0)
+
+  const handleEdit = (expense) => {
+    setEditingExpense(expense)
+    setShowForm(true)
+  }
+
+  const handleCloseForm = () => {
+    setShowForm(false)
+    setEditingExpense(null)
+  }
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -34,10 +47,14 @@ export default function ExpensesPage() {
         <Wallet className="h-10 w-10 text-primary/50" />
       </div>
 
-      {showForm && <ExpenseForm onClose={() => setShowForm(false)} />}
+      {showForm && <ExpenseForm onClose={handleCloseForm} initialData={editingExpense} />}
 
       <div className="space-y-3">
-        {expenses.length === 0 && !showForm ? (
+        {loading ? (
+          Array(3).fill(0).map((_, i) => (
+            <Skeleton key={i} className="h-20 w-full rounded-xl" />
+          ))
+        ) : expenses.length === 0 && !showForm ? (
           <EmptyState 
             icon={Wallet}
             title="មិនទាន់មានការចំណាយ"
@@ -45,7 +62,9 @@ export default function ExpensesPage() {
             action={<Button onClick={() => setShowForm(true)}>បន្ថែមចំណាយ</Button>}
           />
         ) : (
-          expenses.map((expense) => <ExpenseItem key={expense.id} expense={expense} />)
+          expenses.map((expense) => (
+            <ExpenseItem key={expense.id} expense={expense} onEdit={handleEdit} />
+          ))
         )}
       </div>
     </div>

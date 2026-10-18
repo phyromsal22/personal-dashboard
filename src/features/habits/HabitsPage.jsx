@@ -10,6 +10,17 @@ import { HabitItem } from './components/HabitItem'
 export default function HabitsPage() {
   const habits = useHabitsStore((state) => state.habits)
   const [showForm, setShowForm] = useState(false)
+  const [editingHabit, setEditingHabit] = useState(null) // បន្ថែម State នេះ
+
+  const handleEdit = (habit) => {
+    setEditingHabit(habit)
+    setShowForm(true)
+  }
+
+  const handleCloseForm = () => {
+    setShowForm(false)
+    setEditingHabit(null)
+  }
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -23,7 +34,7 @@ export default function HabitsPage() {
         }
       />
 
-      {showForm && <HabitForm onClose={() => setShowForm(false)} />}
+      {showForm && <HabitForm onClose={handleCloseForm} initialData={editingHabit} />}
 
       <div className="space-y-3">
         {habits.length === 0 && !showForm ? (
@@ -34,7 +45,9 @@ export default function HabitsPage() {
             action={<Button onClick={() => setShowForm(true)}>បង្កើតទម្លាប់ទី១</Button>}
           />
         ) : (
-          habits.map((habit) => <HabitItem key={habit.id} habit={habit} />)
+          habits.map((habit) => (
+            <HabitItem key={habit.id} habit={habit} onEdit={handleEdit} />
+          ))
         )}
       </div>
     </div>

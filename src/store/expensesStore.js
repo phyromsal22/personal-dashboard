@@ -11,6 +11,10 @@ export const useExpensesStore = create(
       deleteExpense: (id) => set((state) => ({ 
         expenses: state.expenses.filter((e) => e.id !== id) 
       })),
+      // បន្ថែមមុខងារនេះ
+      updateExpense: (id, updatedData) => set((state) => ({
+        expenses: state.expenses.map((e) => e.id === id ? { ...e, ...updatedData } : e)
+      })),
     }),
     { name: 'expenses-storage' }
   )

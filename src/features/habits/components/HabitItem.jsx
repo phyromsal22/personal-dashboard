@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check, Trash2, Flame } from 'lucide-react'
+import { Check, Trash2, Flame, Pencil } from 'lucide-react' // បន្ថែម Pencil
 import { toast } from 'sonner'
 import { useHabitsStore } from '@/store/habitsStore'
 import { calcStreak } from '../utils'
@@ -7,7 +7,7 @@ import { todayKey } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 
-export function HabitItem({ habit }) {
+export function HabitItem({ habit, onEdit }) { // ទទួល onEdit prop
   const toggleHabit = useHabitsStore((state) => state.toggleHabit)
   const deleteHabit = useHabitsStore((state) => state.deleteHabit)
   const [showConfirm, setShowConfirm] = useState(false)
@@ -30,7 +30,7 @@ export function HabitItem({ habit }) {
 
   return (
     <>
-      <div className={cn("card p-4 flex items-center justify-between transition-all", isCompletedToday && "border-success/30 bg-success/5")}>
+      <div className={cn("card p-4 flex items-center justify-between transition-all group", isCompletedToday && "border-success/30 bg-success/5")}>
         <div className="flex items-center gap-4">
           <button
             onClick={handleToggle}
@@ -54,9 +54,14 @@ export function HabitItem({ habit }) {
           </div>
         </div>
 
-        <button onClick={() => setShowConfirm(true)} className="text-text-muted hover:text-danger p-2 transition-colors">
-          <Trash2 className="h-5 w-5" />
-        </button>
+        <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+          <button onClick={() => onEdit(habit)} className="text-text-muted hover:text-primary p-2 transition-colors">
+            <Pencil className="h-4 w-4" />
+          </button>
+          <button onClick={() => setShowConfirm(true)} className="text-text-muted hover:text-danger p-2 transition-colors">
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       <ConfirmDialog 
@@ -64,7 +69,7 @@ export function HabitItem({ habit }) {
         onClose={() => setShowConfirm(false)}
         onConfirm={handleDelete}
         title="លុបទម្លាប់?"
-        description={`តើអ្នកប្រាកដជាចង់លុប "${habit.name}" មែនទេ? ទិន្នន័យនេះនឹងបាត់ទៅវិញហើយ។`}
+        description={`តើអ្នកប្រាកដជាចង់លុប "${habit.name}" មែនទេ?`}
       />
     </>
   )

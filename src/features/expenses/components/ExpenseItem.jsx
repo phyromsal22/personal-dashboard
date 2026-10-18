@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { Trash2 } from 'lucide-react'
+import { Trash2, Pencil } from 'lucide-react' // បន្ថែម Pencil
 import { toast } from 'sonner'
 import { useExpensesStore } from '@/store/expensesStore'
 import { EXPENSE_CATEGORIES } from '@/lib/constants'
 import { formatCurrency, formatDate } from '@/lib/formatters'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 
-export function ExpenseItem({ expense }) {
+export function ExpenseItem({ expense, onEdit }) { // ទទួល onEdit prop
   const deleteExpense = useExpensesStore((state) => state.deleteExpense)
   const [showConfirm, setShowConfirm] = useState(false)
   
@@ -30,11 +30,17 @@ export function ExpenseItem({ expense }) {
           </div>
         </div>
         
-        <div className="flex items-center gap-4">
-          <span className="font-semibold text-danger">-{formatCurrency(expense.amount)}</span>
-          <button onClick={() => setShowConfirm(true)} className="text-text-muted hover:text-danger opacity-0 group-hover:opacity-100 transition-all p-2">
-            <Trash2 className="h-4 w-4" />
-          </button>
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-danger mr-2">-{formatCurrency(expense.amount)}</span>
+          
+          <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <button onClick={() => onEdit(expense)} className="text-text-muted hover:text-primary p-2 transition-colors">
+              <Pencil className="h-4 w-4" />
+            </button>
+            <button onClick={() => setShowConfirm(true)} className="text-text-muted hover:text-danger p-2 transition-colors">
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
 

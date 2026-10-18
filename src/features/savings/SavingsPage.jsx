@@ -1,55 +1,55 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Target, Plus, Trash2, Wallet, Camera, Loader2, ClipboardPaste, Share2 } from 'lucide-react'
+import { Target, Plus, Trash2, Wallet, Camera, Loader2, ClipboardPaste, Share2, History, X } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { useSavingsStore } from '@/store/savingsStore'
-import { formatCurrency } from '@/lib/formatters'
+import { formatCurrency, formatDate } from '@/lib/formatters'
 import { toast } from 'sonner'
 
 export default function SavingsPage() {
-  const { goals, loading, fetchGoals, addGoal, contributeToGoal, deleteGoal, joinGoal } = useSavingsStore()
+  const { goals, contributions, loading, fetchGoals, fetchContributions, addGoal, contributeToGoal, deleteGoal, joinGoal } = useSavingsStore()
   const [searchParams, setSearchParams] = useSearchParams()
   
   const [name, setName] = useState('')
   const [target, setTarget] = useState('')
-  const [activeGoal, setActiveGoal] = useState(null)
+  const [activeGoal, setActiveGoal] = useState(null) // សម្រាប់ Form ដាក់លុយ
+  const [historyGoal, setHistoryGoal] = useState(null) // សម្រាប់មើលប្រវត្តិ
+  
   const [amount, setAmount] = useState('')
   const [note, setNote] = useState('')
   const [receiptFile, setReceiptFile] = useState(null)
   const [loadingScan, setLoadingScan] = useState(false)
 
-  // ពិនិត្យមើលថាតើមាន Link អញ្ជើញ (?join=...) ឬអត់
+  // ពិនិត្យមើល Link អញ្ជើញ
   useEffect(() => {
     const joinId = searchParams.get('join')
-    
-    // បើគ្មាន joinId ទេ ឱ្យវាឈប់ធ្វើការភ្លាម (ការពារ Infinite Loop)
     if (!joinId) return;
 
     const processJoin = async () => {
-      // ពិនិត្យមើលថាតើ ID នេះមានលក្ខណៈធម្មតាឬអត់ (ការពារកុំឱ្យគាំងពេល Scan ខុស)
       if (joinId.length > 50 || joinId.includes('@') || joinId.includes(' ')) {
         toast.error('Link អញ្ជើញនេះមិនត្រឹមត្រូវទេ!')
         setSearchParams({})
         return
       }
-
       const success = await joinGoal(joinId)
-      if (success) {
-        toast.success('អ្នកបានចូលរួមក្នុងគោលដៅសន្សំនេះហើយ!')
-      } else {
-        toast.error('អ្នកប្រហែលជាចូលរួមរួចហើយ ឬ Link មិនត្រឹមត្រូវ។')
-      }
-      // លុប ?join ចេញពី URL ដើម្បីបញ្ចប់ដំណើរការ
+      if (success) toast.success('អ្នកបានចូលរួមក្នុងគោលដៅសន្សំនេះហើយ!')
+      else toast.error('អ្នកប្រហែលជាចូលរួមរួចហើយ ឬ Link មិនត្រឹមត្រូវ។')
       setSearchParams({})
     }
-
     processJoin()
   }, [searchParams, joinGoal, setSearchParams])
 
   useEffect(() => { fetchGoals() }, [fetchGoals])
+
+  // ពេលចុចមើលប្រវត្តិ ឱ្យវាទាញទិន្នន័យ
+  useEffect(() => {
+    if (historyGoal) {
+      fetchContributions(historyGoal.id)
+    }
+  }, [historyGoal, fetchContributions])
 
   const handleAddGoal = async (e) => {
     e.preventDefault()
@@ -60,34 +60,24 @@ export default function SavingsPage() {
     toast.success('បានបង្កើតគោលដៅថ្មី!')
   }
 
-  // មុខងារចែករំលែក (Share)
   const handleShare = async (goalId, goalName) => {
     const url = `${window.location.origin}/savings?join=${goalId}`
     if (navigator.share) {
       try {
-        await navigator.share({
-          title: 'ចូលរួមសន្សំលុយជាមួយខ្ញុំ!',
-          text: `សូមចូលរួមដាក់លុយក្នុងគោលដៅ "${goalName}" របស់ខ្ញុំ!`,
-          url: url,
-        })
-      } catch (err) {
-        console.log('Error sharing:', err)
-      }
+        await navigator.share({ title: 'ចូលរួមសន្សំលុយជាមួយខ្ញុំ!', text: `សូមចូលរួមដាក់លុយក្នុងគោលដៅ "${goalName}" របស់ខ្ញុំ!`, url: url })
+      } catch (err) { console.log('Error sharing:', err) }
     } else {
       navigator.clipboard.writeText(url)
       toast.success('បានចម្លង Link អញ្ជើញ! សូមផ្ញើទៅមិត្តភក្តិរបស់អ្នក។')
     }
   }
 
-  // មុខងារ AI ស្កេនវិក័យប័ត្រ (អានទាំងលុយ និង Note)
   const processImage = async (file) => {
     if (!file || !file.type.startsWith('image/')) return toast.error('សូមជ្រើសរើសរូបភាព')
-    
     setReceiptFile(file)
     setLoadingScan(true)
     const reader = new FileReader()
     reader.readAsDataURL(file)
-    
     reader.onload = async () => {
       try {
         const base64Image = reader.result.split(',')[1]
@@ -96,19 +86,7 @@ export default function SavingsPage() {
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_DEEPSEEK_API_KEY}` },
           body: JSON.stringify({
             model: 'deepseek-flash',
-            messages: [{
-              role: 'user',
-              content: [
-                { 
-                  type: 'text', 
-                  text: "Extract the total amount (number only) and a short note from this receipt. Return ONLY a valid JSON object with keys: 'amount', 'note'. Do not include markdown formatting." 
-                },
-                { 
-                  type: 'image_url', 
-                  image_url: { url: `data:${file.type};base64,${base64Image}` } 
-                }
-              ]
-            }],
+            messages: [{ role: 'user', content: [{ type: 'text', text: "Extract the total amount (number only) and a short note from this receipt. Return ONLY a valid JSON object with keys: 'amount', 'note'. Do not include markdown formatting." }, { type: 'image_url', image_url: { url: `data:${file.type};base64,${base64Image}` } }] }],
             temperature: 0.1
           })
         })
@@ -123,28 +101,6 @@ export default function SavingsPage() {
       } finally {
         setLoadingScan(false)
       }
-    }
-  }
-
-  // មុខងារ Paste ពី Clipboard
-  const handlePasteButtonClick = async () => {
-    try {
-      if (!navigator.clipboard || !navigator.clipboard.read) {
-        return toast.error('ទូរស័ព្ទរបស់អ្នកមិនគាំទ្រការ Paste រូបភាពទេ។ សូមប្រើប៊ូតុងថតរូបជំនួសវិញ។')
-      }
-      const items = await navigator.clipboard.read()
-      for (const item of items) {
-        const imageType = item.types.find(type => type.startsWith('image/'))
-        if (imageType) {
-          const blob = await item.getType(imageType)
-          const file = new File([blob], "pasted-image.png", { type: imageType })
-          processImage(file)
-          return
-        }
-      }
-      toast.error('រកមិនឃើញរូបភាពនៅក្នុង Clipboard ទេ។')
-    } catch (error) {
-      toast.error('សូមអនុញ្ញាតឱ្យចូលប្រើ Clipboard ឬជ្រើសរើសរូបភាពពី Gallery។')
     }
   }
 
@@ -183,8 +139,11 @@ export default function SavingsPage() {
                   <Target className="h-5 w-5 text-primary" />
                   <h3 className="font-semibold text-text">{goal.name}</h3>
                 </div>
-                <div className="flex items-center opacity-100 sm:opacity-0 group-hover:opacity-100 transition">
-                  <button onClick={() => handleShare(goal.id, goal.name)} className="text-text-muted hover:text-primary p-1 mr-1" title="ចែករំលែក">
+                <div className="flex items-center gap-1">
+                  <button onClick={() => setHistoryGoal(goal)} className="text-text-muted hover:text-primary p-1" title="ប្រវត្តិ">
+                    <History className="h-4 w-4" />
+                  </button>
+                  <button onClick={() => handleShare(goal.id, goal.name)} className="text-text-muted hover:text-primary p-1" title="ចែករំលែក">
                     <Share2 className="h-4 w-4" />
                   </button>
                   <button onClick={() => deleteGoal(goal.id)} className="text-text-muted hover:text-danger p-1" title="លុប">
@@ -214,21 +173,58 @@ export default function SavingsPage() {
         })}
       </div>
 
-      {/* Modal សម្រាប់ដាក់លុយ និងស្កេនវិក័យប័ត្រ */}
+      {/* Modal មើលប្រវត្តិ (History Modal) */}
+      {historyGoal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-up">
+          <div className="card w-full max-w-md bg-surface border-border flex flex-col max-h-[80vh]">
+            <div className="flex justify-between items-center mb-4 pb-2 border-b border-border">
+              <h3 className="text-lg font-semibold text-text">ប្រវត្តិ: {historyGoal.name}</h3>
+              <button onClick={() => setHistoryGoal(null)} className="text-text-muted hover:text-text">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="overflow-y-auto pr-2 space-y-3">
+              {contributions.length === 0 ? (
+                <p className="text-center text-text-muted text-sm py-4">មិនទាន់មានការដាក់លុយនៅឡើយទេ។</p>
+              ) : (
+                contributions.map((c) => (
+                  <div key={c.id} className="bg-surface-hover p-3 rounded-lg border border-border/50">
+                    <div className="flex justify-between items-start mb-1">
+                      <span className="font-semibold text-success">+{formatCurrency(c.amount)}</span>
+                      <span className="text-xs text-text-muted">{formatDate(c.created_at, 'short')}</span>
+                    </div>
+                    <p className="text-sm font-medium text-text mb-1">{c.contributor_email || 'អ្នកប្រើប្រាស់'}</p>
+                    {c.note && <p className="text-sm text-text-secondary italic">"{c.note}"</p>}
+                    
+                    {/* បង្ហាញរូបភាពវិក័យប័ត្រ (បើមាន) */}
+                    {c.receipt_url && (
+                      <a href={c.receipt_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-2 inline-block">
+                        មើលវិក័យប័ត្រ
+                      </a>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal ដាក់លុយ (Contribute Modal) */}
       {activeGoal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-up">
           <div className="card w-full max-w-md bg-surface border-border">
             <h3 className="text-lg font-semibold text-text mb-4">ដាក់លុយចូល: {activeGoal.name}</h3>
             <form onSubmit={handleContribute} className="space-y-4">
               
-              {/* ប្រអប់ស្កេនវិក័យប័ត្រ */}
               <div className="grid grid-cols-2 gap-2">
                 <label className="flex flex-col items-center justify-center h-24 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-surface-hover">
                   {loadingScan ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : <Camera className="h-6 w-6 text-text-muted mb-1" />}
                   <span className="text-xs text-text text-center px-2">{loadingScan ? 'AI កំពុងអាន...' : 'ថតរូបវិក័យប័ត្រ'}</span>
                   <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => processImage(e.target.files[0])} />
                 </label>
-                <button type="button" onClick={handlePasteButtonClick} className="flex flex-col items-center justify-center h-24 border-2 border-dashed border-border rounded-lg hover:bg-surface-hover">
+                <button type="button" onClick={() => document.dispatchEvent(new ClipboardEvent('paste'))} className="flex flex-col items-center justify-center h-24 border-2 border-dashed border-border rounded-lg hover:bg-surface-hover">
                   <ClipboardPaste className="h-6 w-6 text-text-muted mb-1" />
                   <span className="text-xs text-text text-center px-2">Paste រូបភាព</span>
                 </button>

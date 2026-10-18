@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 
 export const useSavingsStore = create((set, get) => ({
   goals: [],
+  contributions: [], // បន្ថែមសម្រាប់រក្សាទុកប្រវត្តិ
   loading: false,
 
   fetchGoals: async () => {
@@ -31,6 +32,17 @@ export const useSavingsStore = create((set, get) => ({
     }
   },
 
+  // ទាញយកប្រវត្តិនៃការដាក់លុយសម្រាប់គោលដៅណាមួយ
+  fetchContributions: async (goalId) => {
+    const { data, error } = await supabase
+      .from('savings_contributions')
+      .select('*')
+      .eq('goal_id', goalId)
+      .order('created_at', { ascending: false })
+    
+    if (!error) set({ contributions: data })
+  },
+
   addGoal: async (goal) => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
@@ -42,20 +54,13 @@ export const useSavingsStore = create((set, get) => ({
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return false
 
-    // ពិនិត្យមើលថាតើគាត់ជាម្ចាស់គោលដៅនេះឬអត់ (បើជាម្ចាស់ មិនចាំបាច់ចូលរួមទេ)
     const { data: goal } = await supabase.from('savings_goals').select('user_id').eq('id', goalId).single()
     if (goal?.user_id === user.id) return true
 
-    // ពិនិត្យមើលថាតើគាត់ចូលរួមរួចហើយឬអត់
     const { data: existing } = await supabase.from('goal_collaborators').select('*').eq('goal_id', goalId).eq('user_id', user.id).single()
     if (existing) return true
 
-    // បើមិនទាន់ ទើបឱ្យចូលរួម
-    const { error } = await supabase.from('goal_collaborators').insert([{
-      goal_id: goalId,
-      user_id: user.id
-    }])
-
+    const { error } = await supabase.from('goal_collaborators').insert([{ goal_id: goalId, user_id: user.id }])
     if (!error) {
       get().fetchGoals()
       return true
@@ -81,6 +86,7 @@ export const useSavingsStore = create((set, get) => ({
     const { error } = await supabase.from('savings_contributions').insert([{
       goal_id: goalId,
       contributor_id: user.id,
+      contributor_email: user.email, // បន្ថែម Email អ្នកដាក់លុយ
       amount: Number(amount),
       note,
       receipt_url: receiptUrl

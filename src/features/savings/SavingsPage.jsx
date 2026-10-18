@@ -31,7 +31,6 @@ export default function SavingsPage() {
         } else {
           toast.error('អ្នកប្រហែលជាចូលរួមរួចហើយ ឬ Link មិនត្រឹមត្រូវ។')
         }
-        // លុប ?join ចេញពី URL ដើម្បីកុំឱ្យវាធ្វើឡើងវិញ
         setSearchParams({})
       })
     }
@@ -48,16 +47,75 @@ export default function SavingsPage() {
     toast.success('បានបង្កើតគោលដៅថ្មី!')
   }
 
-  // មុខងារចម្លង Link អញ្ជើញ
-  const handleShare = (goalId) => {
+  // មុខងារចែករំលែក (Share)
+  const handleShare = async (goalId, goalName) => {
     const url = `${window.location.origin}/savings?join=${goalId}`
-    navigator.clipboard.writeText(url)
-    toast.success('បានចម្លង Link អញ្ជើញ! សូមផ្ញើទៅមិត្តភក្តិរបស់អ្នក។')
+    
+    // ប្រើ Web Share API បើទូរស័ព្ទគាំទ្រ
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'ចូលរួមសន្សំលុយជាមួយខ្ញុំ!',
+          text: `សូមចូលរួមដាក់លុយក្នុងគោលដៅ "${goalName}" របស់ខ្ញុំ!`,
+          url: url,
+        })
+      } catch (err) {
+        console.log('Error sharing:', err)
+      }
+    } else {
+      // បើលើកុំព្យូទ័រ ឬ Browser មិនគាំទ្រ ឱ្យ Copy វិញ
+      navigator.clipboard.writeText(url)
+      toast.success('បានចម្លង Link អញ្ជើញ! សូមផ្ញើទៅមិត្តភក្តិរបស់អ្នក។')
+    }
   }
 
-  // ... (មុខងារ processImage, handlePaste, handleContribute ដូចកូដចាស់) ...
-  const processImage = async (file) => { /* ទុកដដែល */ }
-  const handlePaste = (e) => { /* ទុកដដែល */ }
+  const processImage = async (file) => {
+    if (!file || !file.type.startsWith('image/')) return toast.error('សូមជ្រើសរើសរូបភាព')
+    setReceiptFile(file)
+    setLoadingScan(true)
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+    reader.onload = async () => {
+      try {
+        const base64Image = reader.result.split(',')[1]
+        const response = await fetch('https://api.deepseek.com/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_DEEPSEEK_API_KEY}` },
+          body: JSON.stringify({
+            model: 'deepseek-flash',
+            messages: [{ role: 'user', content: [{ type: 'text', text: "Extract the total amount from this receipt. Return ONLY a valid JSON object with key: 'amount'." }, { type: 'image_url', image_url: { url: `data:${file.type};base64,${base64Image}` } }] }],
+            temperature: 0.1
+          })
+        })
+        const data = await response.json()
+        let text = data.choices[0].message.content.replace(/```json/g, '').replace(/```/g, '').trim()
+        const result = JSON.parse(text)
+        setAmount(result.amount?.toString() || '')
+        toast.success('AI អានវិក័យប័ត្រជោគជ័យ!')
+      } catch (error) {
+        toast.error('មិនអាចអានវិក័យប័ត្របានទេ')
+      } finally {
+        setLoadingScan(false)
+      }
+    }
+  }
+
+  const handlePaste = (e) => {
+    const items = e.clipboardData?.items
+    if (!items) return
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        processImage(items[i].getAsFile())
+        break
+      }
+    }
+  }
+
+  useEffect(() => {
+    if (activeGoal) document.addEventListener('paste', handlePaste)
+    return () => document.removeEventListener('paste', handlePaste)
+  }, [activeGoal])
+
   const handleContribute = async (e) => {
     e.preventDefault()
     if (!amount) return toast.error('សូមបញ្ចូលចំនួនទឹកប្រាក់')
@@ -75,7 +133,7 @@ export default function SavingsPage() {
 
       <Card>
         <form onSubmit={handleAddGoal} className="flex gap-3">
-          <Input placeholder="ឈ្មោះគោលដៅ..." value={name} onChange={e => setName(e.target.value)} />
+          <Input placeholder="ឈ្មោះគោលដៅ (ឧ. ទិញ Laptop)" value={name} onChange={e => setName(e.target.value)} />
           <Input type="number" placeholder="ចំនួនទឹកប្រាក់ ($)" value={target} onChange={e => setTarget(e.target.value)} className="w-32" />
           <Button type="submit"><Plus className="h-4 w-4" /> បង្កើត</Button>
         </form>
@@ -91,9 +149,9 @@ export default function SavingsPage() {
                   <Target className="h-5 w-5 text-primary" />
                   <h3 className="font-semibold text-text">{goal.name}</h3>
                 </div>
-                <div className="flex items-center opacity-0 group-hover:opacity-100 transition">
+                <div className="flex items-center opacity-100 sm:opacity-0 group-hover:opacity-100 transition">
                   {/* ប៊ូតុង Share */}
-                  <button onClick={() => handleShare(goal.id)} className="text-text-muted hover:text-primary p-1 mr-1" title="ចម្លង Link អញ្ជើញ">
+                  <button onClick={() => handleShare(goal.id, goal.name)} className="text-text-muted hover:text-primary p-1 mr-1" title="ចែករំលែក">
                     <Share2 className="h-4 w-4" />
                   </button>
                   <button onClick={() => deleteGoal(goal.id)} className="text-text-muted hover:text-danger p-1" title="លុប">
@@ -123,11 +181,10 @@ export default function SavingsPage() {
         })}
       </div>
 
-      {/* Modal សម្រាប់ដាក់លុយ (ទុកដដែល) */}
+      {/* Modal សម្រាប់ដាក់លុយ (Contribute) */}
       {activeGoal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-up">
-           {/* ... កូដ Form ដាក់លុយ ដូចកូដចាស់ ... */}
-           <div className="card w-full max-w-md bg-surface border-border">
+          <div className="card w-full max-w-md bg-surface border-border">
             <h3 className="text-lg font-semibold text-text mb-4">ដាក់លុយចូល: {activeGoal.name}</h3>
             <form onSubmit={handleContribute} className="space-y-4">
               <div className="grid grid-cols-2 gap-2">

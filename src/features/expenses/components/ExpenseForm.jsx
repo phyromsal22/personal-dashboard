@@ -26,7 +26,7 @@ export function ExpenseForm({ onClose, initialData }) {
 
   // មុខងារកណ្តាលសម្រាប់យករូបភាពទៅឱ្យ AI អាន
   const processImage = async (file) => {
-    if (!file.type.startsWith('image/')) {
+    if (!file || !file.type.startsWith('image/')) {
       return toast.error('សូមជ្រើសរើស ឬ Paste តែរូបភាពប៉ុណ្ណោះ')
     }
 
@@ -37,33 +37,57 @@ export function ExpenseForm({ onClose, initialData }) {
     reader.onload = async () => {
       try {
         const base64Image = reader.result.split(',')[1]
-        
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{
-              parts: [
-                { text: "Analyze this receipt image. Extract the total amount (number only), guess the category (choose from: food, transport, shopping, other), and write a short note (e.g. coffee, taxi). Return ONLY a valid JSON object with keys: 'amount', 'category', 'note'. Do not include markdown formatting." },
-                { inline_data: { mime_type: file.type, data: base64Image } }
-              ]
-            }]
-          })
-        })
+        // កំណត់ mime_type ឱ្យបានច្បាស់លាស់ (បើ file.type ទទេ ឱ្យប្រើ image/jpeg)
+        const mimeType = file.type || 'image/jpeg'
+
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{
+                parts: [
+                  { text: "Analyze this receipt image. Extract the total amount (number only), guess the category (choose from: food, transport, shopping, other), and write a short note (e.g. coffee, taxi). Return ONLY a valid JSON object with keys: 'amount', 'category', 'note'. Do not include markdown formatting." },
+                  { 
+                    inline_data: { 
+                      mime_type: mimeType, 
+                      data: base64Image 
+                    } 
+                  }
+                ]
+              }]
+            })
+          }
+        )
+
+        // ពិនិត្យមើលថាតើ Response មានបញ្ហាឬអត់
+        if (!response.ok) {
+          const errData = await response.json()
+          console.error('Gemini API Error:', errData)
+          throw new Error(errData.error?.message || 'API request failed')
+        }
 
         const data = await response.json()
+        
+        // ពិនិត្យមើលថាតើមាន candidates ឬអត់
+        if (!data.candidates || !data.candidates[0]?.content?.parts?.[0]?.text) {
+          throw new Error('AI មិនអាចអានរូបភាពនេះបានទេ')
+        }
+
         let text = data.candidates[0].content.parts[0].text
+        // សម្អាត Markdown formatting ដែល AI អាចបន្ថែមមក
         text = text.replace(/```json/g, '').replace(/```/g, '').trim()
         
         const result = JSON.parse(text)
         
-        setAmount(result.amount.toString())
-        setCategory(result.category)
-        setNote(result.note)
+        setAmount(result.amount?.toString() || '0')
+        setCategory(result.category || 'other')
+        setNote(result.note || '')
         toast.success('ស្កេនវិក័យប័ត្រជោគជ័យ!')
       } catch (error) {
-        console.error(error)
-        toast.error('មិនអាចអានរូបភាពបានទេ សូមព្យាយាមម្តងទៀត')
+        console.error('Scan Error:', error)
+        toast.error(error.message || 'មិនអាចអានរូបភាពបានទេ សូមព្យាយាមម្តងទៀត')
       } finally {
         setLoadingScan(false)
       }

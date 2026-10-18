@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase'
 import { useHabitsStore } from '@/store/habitsStore'
 import { useExpensesStore } from '@/store/expensesStore'
 import { useMoodStore } from '@/store/moodStore'
+import { useReminders } from '@/hooks/useReminders'
 
 export function AppLayout() {
   const [session, setSession] = useState(null)
@@ -18,13 +19,12 @@ export function AppLayout() {
   const fetchExpenses = useExpensesStore((state) => state.fetchExpenses)
   const fetchMoods = useMoodStore((state) => state.fetchMoods)
 
+  useReminders()
+
   useEffect(() => {
-    // ពិនិត្យ Session ដំបូង
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setLoading(false)
-      
-      // បើមាន Session ឱ្យទាញទិន្នន័យ
       if (session) {
         fetchHabits()
         fetchExpenses()
@@ -32,7 +32,6 @@ export function AppLayout() {
       }
     })
 
-    // តាមដានការផ្លាស់ប្តូរ (Login/Logout)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
       if (session) {
@@ -45,7 +44,6 @@ export function AppLayout() {
     return () => subscription.unsubscribe()
   }, [fetchHabits, fetchExpenses, fetchMoods])
 
-  // បង្ហាញ Loading មុនពេលសម្រេចចិត្តថាត្រូវលោតទៅ Login
   if (loading) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center text-text font-medium">
@@ -54,7 +52,6 @@ export function AppLayout() {
     )
   }
 
-  // បើគ្មាន Session ទេ ទើបលោតទៅ /login
   if (!session) {
     return <Navigate to="/login" replace />
   }
@@ -64,7 +61,8 @@ export function AppLayout() {
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <Topbar />
-        <main className="flex-1 p-4 md:p-6 pb-20 md:p-6 overflow-hidden">
+        {/* ខ្ញុំបានកែបន្ទាត់ខាងក្រោមនេះឱ្យស្អាត */}
+        <main className="flex-1 p-4 pb-20 md:p-6 overflow-hidden">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}

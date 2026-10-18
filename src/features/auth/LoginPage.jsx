@@ -24,7 +24,7 @@ export default function LoginPage() {
         })
         if (error) throw error
         toast.success('ចូលប្រើប្រាស់ជោគជ័យ!')
-        window.location.href = '/' 
+        window.location.href = '/dashboard' 
       } else {
         const { error } = await supabase.auth.signUp({ 
           email: email.trim(), 

@@ -5,8 +5,9 @@ import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 
+// កែ navItems បន្តិច
 const navItems = [
-  { to: '/', label: 'Dashboard', icon: Home, end: true },
+  { to: '/dashboard', label: 'Dashboard', icon: Home, end: true }, // ប្តូរពី / ទៅ /dashboard
   { to: '/habits', label: 'Habits', icon: CheckSquare },
   { to: '/expenses', label: 'Expenses', icon: Wallet },
   { to: '/mood', label: 'Mood', icon: Smile },

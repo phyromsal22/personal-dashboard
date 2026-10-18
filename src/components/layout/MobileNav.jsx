@@ -2,8 +2,9 @@ import { NavLink } from 'react-router-dom'
 import { Home, CheckSquare, Wallet, Smile, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+// កែ items បន្តិច
 const items = [
-  { to: '/', icon: Home, end: true },
+  { to: '/dashboard', icon: Home, end: true }, // ប្តូរពី / ទៅ /dashboard
   { to: '/habits', icon: CheckSquare },
   { to: '/expenses', icon: Wallet },
   { to: '/mood', icon: Smile },

@@ -15,8 +15,8 @@ export default function SavingsPage() {
   
   const [name, setName] = useState('')
   const [target, setTarget] = useState('')
-  const [activeGoal, setActiveGoal] = useState(null) // សម្រាប់ Form ដាក់លុយ
-  const [historyGoal, setHistoryGoal] = useState(null) // សម្រាប់មើលប្រវត្តិ
+  const [activeGoal, setActiveGoal] = useState(null) 
+  const [historyGoal, setHistoryGoal] = useState(null) 
   
   const [amount, setAmount] = useState('')
   const [note, setNote] = useState('')
@@ -121,9 +121,9 @@ export default function SavingsPage() {
 
       {/* បង្កើតគោលដៅថ្មី */}
       <Card>
-        <form onSubmit={handleAddGoal} className="flex gap-3">
-          <Input placeholder="ឈ្មោះគោលដៅ (ឧ. ទិញ Laptop)" value={name} onChange={e => setName(e.target.value)} />
-          <Input type="number" placeholder="ចំនួនទឹកប្រាក់ ($)" value={target} onChange={e => setTarget(e.target.value)} className="w-32" />
+        <form onSubmit={handleAddGoal} className="flex flex-col sm:flex-row gap-3">
+          <Input placeholder="ឈ្មោះគោលដៅ (ឧ. ទិញ Laptop)" value={name} onChange={e => setName(e.target.value)} className="flex-1" />
+          <Input type="number" placeholder="ចំនួនទឹកប្រាក់ ($)" value={target} onChange={e => setTarget(e.target.value)} className="w-full sm:w-32" />
           <Button type="submit"><Plus className="h-4 w-4" /> បង្កើត</Button>
         </form>
       </Card>
@@ -133,20 +133,18 @@ export default function SavingsPage() {
         {goals.map(goal => {
           const percent = Math.min((goal.current_amount / goal.target_amount) * 100, 100)
           return (
-            <Card key={goal.id} className="relative group flex flex-col justify-between">
+            <Card key={goal.id} className="relative flex flex-col justify-between">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-2">
                   <Target className="h-5 w-5 text-primary" />
                   <h3 className="font-semibold text-text">{goal.name}</h3>
                 </div>
+                {/* ប៊ូតុង Share និង Delete */}
                 <div className="flex items-center gap-1">
-                  <button onClick={() => setHistoryGoal(goal)} className="text-text-muted hover:text-primary p-1" title="ប្រវត្តិ">
-                    <History className="h-4 w-4" />
-                  </button>
-                  <button onClick={() => handleShare(goal.id, goal.name)} className="text-text-muted hover:text-primary p-1" title="ចែករំលែក">
+                  <button onClick={() => handleShare(goal.id, goal.name)} className="text-text-muted hover:text-primary p-2 bg-surface-hover rounded-md" title="ចែករំលែក">
                     <Share2 className="h-4 w-4" />
                   </button>
-                  <button onClick={() => deleteGoal(goal.id)} className="text-text-muted hover:text-danger p-1" title="លុប">
+                  <button onClick={() => deleteGoal(goal.id)} className="text-text-muted hover:text-danger p-2 bg-surface-hover rounded-md" title="លុប">
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
@@ -165,9 +163,15 @@ export default function SavingsPage() {
                 </div>
               </div>
 
-              <Button className="w-full" variant="secondary" onClick={() => setActiveGoal(goal)}>
-                <Wallet className="h-4 w-4 mr-2" /> ចូលរួមដាក់លុយ
-              </Button>
+              {/* ប៊ូតុងខាងក្រោម (បង្ហាញច្បាស់លើទូរស័ព្ទ) */}
+              <div className="flex gap-2 w-full">
+                <Button className="flex-1" variant="secondary" onClick={() => setActiveGoal(goal)}>
+                  <Wallet className="h-4 w-4 mr-2" /> ដាក់លុយ
+                </Button>
+                <Button className="flex-1" variant="outline" onClick={() => setHistoryGoal(goal)}>
+                  <History className="h-4 w-4 mr-2" /> ប្រវត្តិ
+                </Button>
+              </div>
             </Card>
           )
         })}
@@ -179,7 +183,7 @@ export default function SavingsPage() {
           <div className="card w-full max-w-md bg-surface border-border flex flex-col max-h-[80vh]">
             <div className="flex justify-between items-center mb-4 pb-2 border-b border-border">
               <h3 className="text-lg font-semibold text-text">ប្រវត្តិ: {historyGoal.name}</h3>
-              <button onClick={() => setHistoryGoal(null)} className="text-text-muted hover:text-text">
+              <button onClick={() => setHistoryGoal(null)} className="text-text-muted hover:text-text p-1">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -197,7 +201,6 @@ export default function SavingsPage() {
                     <p className="text-sm font-medium text-text mb-1">{c.contributor_email || 'អ្នកប្រើប្រាស់'}</p>
                     {c.note && <p className="text-sm text-text-secondary italic">"{c.note}"</p>}
                     
-                    {/* បង្ហាញរូបភាពវិក័យប័ត្រ (បើមាន) */}
                     {c.receipt_url && (
                       <a href={c.receipt_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-2 inline-block">
                         មើលវិក័យប័ត្រ

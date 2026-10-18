@@ -1,15 +1,15 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { Home, CheckSquare, Wallet, Smile, Settings, ChevronLeft, LogOut } from 'lucide-react'
+import { Home, CheckSquare, Wallet, Smile, Settings, ChevronLeft, LogOut, Target } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 
-// កែ navItems បន្តិច
 const navItems = [
-  { to: '/dashboard', label: 'Dashboard', icon: Home, end: true }, // ប្តូរពី / ទៅ /dashboard
+  { to: '/dashboard', label: 'Dashboard', icon: Home, end: true },
   { to: '/habits', label: 'Habits', icon: CheckSquare },
   { to: '/expenses', label: 'Expenses', icon: Wallet },
+  { to: '/savings', label: 'Savings', icon: Target }, // បន្ថែម Savings
   { to: '/mood', label: 'Mood', icon: Smile },
   { to: '/settings', label: 'Settings', icon: Settings },
 ]
@@ -38,8 +38,6 @@ export function Sidebar() {
           </NavLink>
         ))}
       </nav>
-      
-      {/* ប៊ូតុង Logout និង Collapse */}
       <div className="border-t border-border flex flex-col">
         <button onClick={handleLogout} className="flex items-center gap-3 h-12 px-4 text-danger hover:bg-danger/10 transition-colors">
           <LogOut className="h-5 w-5 shrink-0" />

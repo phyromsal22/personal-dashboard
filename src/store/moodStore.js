@@ -2,7 +2,8 @@ import { create } from 'zustand'
 import { supabase } from '@/lib/supabase'
 
 export const useMoodStore = create((set, get) => ({
-  moods: {}, // ទម្រង់៖ { '2023-10-25': 4, '2023-10-26': 5 }
+  moods: {}, 
+  notes: {}, // បន្ថែមសម្រាប់រក្សាទុក Note
   loading: false,
 
   fetchMoods: async () => {
@@ -10,44 +11,32 @@ export const useMoodStore = create((set, get) => ({
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return set({ loading: false })
 
-    const { data, error } = await supabase
-      .from('moods')
-      .select('*')
-    
+    const { data, error } = await supabase.from('moods').select('*')
     if (!error) {
-      // បំប្លែងពី Array ទៅជា Object ដើម្បីងាយស្រួលហៅប្រើ
       const moodsObj = {}
+      const notesObj = {}
       data.forEach(item => {
         moodsObj[item.mood_date] = item.score
+        if (item.note) notesObj[item.mood_date] = item.note
       })
-      set({ moods: moodsObj, loading: false })
+      set({ moods: moodsObj, notes: notesObj, loading: false })
     }
   },
 
-  setMood: async (date, score) => {
+  setMood: async (date, score, note = '') => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    // ពិនិត្យមើលថាតើថ្ងៃនេះមានអារម្មណ៍ហើយឬនៅ
     const existingMood = get().moods[date]
-
     if (existingMood) {
-      // បើមានហើយ ធ្វើការ Update
-      await supabase
-        .from('moods')
-        .update({ score })
-        .eq('user_id', user.id)
-        .eq('mood_date', date)
+      await supabase.from('moods').update({ score, note }).eq('user_id', user.id).eq('mood_date', date)
     } else {
-      // បើមិនទាន់មាន ធ្វើការ Insert
-      await supabase
-        .from('moods')
-        .insert([{ user_id: user.id, mood_date: date, score }])
+      await supabase.from('moods').insert([{ user_id: user.id, mood_date: date, score, note }])
     }
 
-    // Update ក្នុង State ភ្លាមៗ
     set((state) => ({
-      moods: { ...state.moods, [date]: score }
+      moods: { ...state.moods, [date]: score },
+      notes: { ...state.notes, [date]: note }
     }))
   },
 }))

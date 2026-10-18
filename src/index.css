@@ -1,0 +1,33 @@
+@import './styles/themes.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    border-color: rgb(var(--border)); /* ប្តូរបន្ទាត់នេះ */
+  }
+  html {
+    font-family: 'Inter', 'Plus Jakarta Sans', system-ui, sans-serif;
+  }
+  body {
+    @apply bg-bg text-text antialiased;
+    font-feature-settings: 'tnum' 1;
+    transition: background-color 200ms, color 200ms;
+  }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-border rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-text-muted/50; }
+}
+
+@layer components {
+  .card {
+    @apply bg-surface border border-border rounded-lg p-6 shadow-card;
+    transition: all 200ms ease-out;
+  }
+  .card-hover {
+    @apply hover:-translate-y-0.5 hover:shadow-glow hover:border-primary/40;
+  }
+}
